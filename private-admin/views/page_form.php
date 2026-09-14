@@ -30,8 +30,8 @@ $published = isset($page) ? (bool) $page['is_published'] : true;
         <label>Meta description</label>
         <input type="text" name="meta_desc" value="<?= e($meta) ?>">
 
-        <label>Контент (HTML)</label>
-        <textarea name="content"><?= e($content) ?></textarea>
+        <label>Контент</label>
+        <textarea name="content" id="nfContent"><?= e($content) ?></textarea>
 
         <label>
             <input type="checkbox" name="is_published" value="1" <?= $published ? 'checked' : '' ?>> Опубликована
@@ -43,5 +43,7 @@ $published = isset($page) ? (bool) $page['is_published'] : true;
         </div>
     </form>
 </div>
+
+<script>nfInitEditor('nfContent');</script>
 
 <?php include __DIR__ . '/layout_footer.php'; ?>

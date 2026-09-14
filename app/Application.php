@@ -272,6 +272,17 @@ class Application
             }
             return $controller->updateRun($this);
         });
+
+        // AJAX для медиа-модала редактора.
+        $mediaAjax = new MediaAjax();
+
+        $this->router->get('/admin/ajax/media', function () use ($mediaAjax) {
+            return $mediaAjax->list($this);
+        });
+
+        $this->router->post('/admin/ajax/media/upload', function () use ($mediaAjax) {
+            return $mediaAjax->upload($this);
+        });
     }
 
     public function run(): void

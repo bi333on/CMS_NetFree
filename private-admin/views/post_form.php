@@ -49,8 +49,8 @@ $featured  = $post['featured_image'] ?? '';
         <label>URL главного изображения</label>
         <input type="text" name="featured_image" value="<?= e($featured) ?>">
 
-        <label>Контент (HTML)</label>
-        <textarea name="content"><?= e($content) ?></textarea>
+        <label>Контент</label>
+        <textarea name="content" id="nfContent"><?= e($content) ?></textarea>
 
         <div style="margin-top:16px;" class="row">
             <button type="submit" class="btn">Сохранить</button>
@@ -58,5 +58,7 @@ $featured  = $post['featured_image'] ?? '';
         </div>
     </form>
 </div>
+
+<script>nfInitEditor('nfContent');</script>
 
 <?php include __DIR__ . '/layout_footer.php'; ?>

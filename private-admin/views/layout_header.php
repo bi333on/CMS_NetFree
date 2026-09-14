@@ -33,6 +33,21 @@ $adminTitle = $adminTitle ?? 'NetFree — админ-панель';
         .btn.secondary { background:#6b7280; }
         .btn.danger { background:#dc2626; }
         .row { display:flex; gap:8px; }
+        /* Редактор */
+        .nf-editor { border:1px solid #d1d5db; border-radius:6px; background:#fff; }
+        .nf-editor-toolbar { display:flex; gap:4px; flex-wrap:wrap; padding:6px; border-bottom:1px solid #e5e7eb; background:#fafafa; }
+        .nf-editor-toolbar button { background:#fff; border:1px solid #d1d5db; border-radius:4px; padding:5px 9px; cursor:pointer; font-size:13px; }
+        .nf-editor-toolbar button:hover { background:#eef2ff; }
+        .nf-editor-area { min-height:220px; padding:12px; outline:none; }
+        .nf-editor-area img { max-width:100%; height:auto; }
+        /* Модал */
+        .nf-modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:1000; }
+        .nf-modal { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; border-radius:10px; width:720px; max-width:95%; max-height:85%; overflow:auto; padding:20px; }
+        .nf-modal-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:12px; }
+        .nf-modal-grid .item { border:1px solid #e5e7eb; border-radius:6px; padding:6px; text-align:center; cursor:pointer; }
+        .nf-modal-grid .item:hover { border-color:var(--nf-accent); }
+        .nf-modal-grid img { max-width:100%; height:70px; object-fit:cover; display:block; margin:0 auto; }
+        .nf-modal-close { float:right; cursor:pointer; font-size:20px; }
     </style>
 </head>
 <body>
