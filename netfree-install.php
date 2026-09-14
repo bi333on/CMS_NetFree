@@ -73,6 +73,17 @@ function download_repo(string $repoUrl, string $dest, string $token = '', string
         $branch = $m[3];
     }
 
+    // 0) Если токен задан — проверяем, что он валиден, и узнаём логин аккаунта.
+    $login = '';
+    if ($token !== '') {
+        $me = github_request('https://api.github.com/user', $token);
+        if ($me['code'] !== 200) {
+            throw new RuntimeException('Токен недействителен или просрочен (HTTP ' . $me['code'] . ' при запросе /user). Проверьте токен.');
+        }
+        $user = json_decode($me['body'], true);
+        $login = is_array($user) ? (string) ($user['login'] ?? '') : '';
+    }
+
     // 1) Если ветка не задана — узнаём ветку по умолчанию у репозитория.
     if ($branch === '') {
         $info = github_request("https://api.github.com/repos/{$owner}/{$repo}", $token);
@@ -80,7 +91,13 @@ function download_repo(string $repoUrl, string $dest, string $token = '', string
             throw new RuntimeException('Доступ запрещён (HTTP ' . $info['code'] . '). Проверьте GitHub-токен: у него должен быть доступ к этому репозиторию.');
         }
         if ($info['code'] === 404) {
-            throw new RuntimeException('Репозиторий не найден (404). Проверьте владельца и название, либо что токен имеет доступ к приватному репозиторию.');
+            $hint = '';
+            if ($login !== '' && strtolower($login) !== strtolower($owner)) {
+                $hint = ' Внимание: токен принадлежит аккаунту «' . htmlspecialchars($login, ENT_QUOTES) . '», а репозиторий указан под «' . htmlspecialchars($owner, ENT_QUOTES) . '».';
+            } else {
+                $hint = ' Токен действителен (аккаунт «' . htmlspecialchars($login, ENT_QUOTES) . '»), но у него нет доступа к этому приватному репозиторию. Проверьте scope repo или fine-grained доступ (Contents: Read).';
+            }
+            throw new RuntimeException('Репозиторий не найден (404).' . $hint);
         }
         if ($info['code'] !== 200) {
             throw new RuntimeException('GitHub вернул HTTP ' . $info['code'] . ' при получении информации о репозитории.');
