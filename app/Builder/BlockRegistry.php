@@ -248,5 +248,206 @@ class BlockRegistry
                 return '<blockquote ' . Renderer::attrs($node, 'nf-widget nf-quote') . '>' . (string) ($d['text'] ?? '') . '</blockquote>';
             },
         ]);
+
+        $this->register('gallery', [
+            'label'    => 'Галерея',
+            'category' => 'Расширенное',
+            'icon'     => '<svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M4 5h4v4H4V5zm6 0h4v4h-4V5zm6 0h4v4h-4V5zM4 11h4v4H4v-4zm6 0h4v4h-4v-4zm6 0h4v4h-4v-4zM4 17h4v4H4v-4zm6 0h4v4h-4v-4zm6 0h4v4h-4v-4z"/></svg>',
+            'fields'   => [
+                'urls'    => ['type' => 'textarea', 'label' => 'URL изображений (по одному в строке)', 'default' => ''],
+                'columns' => ['type' => 'select', 'label' => 'Колонок',
+                              'options' => ['2' => '2', '3' => '3', '4' => '4'], 'default' => '3'],
+            ],
+            'design'   => ['spacing', 'align'],
+            'render'   => function (array $d, array $node): string {
+                $lines = preg_split('/\r\n|\r|\n/', (string) ($d['urls'] ?? ''));
+                $urls = array_values(array_filter(array_map('trim', (array) $lines)));
+                if (!$urls) {
+                    return '';
+                }
+                $cols = in_array((string) ($d['columns'] ?? '3'), ['2', '3', '4'], true) ? (int) $d['columns'] : 3;
+                $items = '';
+                foreach ($urls as $url) {
+                    $items .= '<figure class="nf-gallery-item"><img src="' . e($url) . '" alt="" loading="lazy"></figure>';
+                }
+                return '<div ' . Renderer::attrs($node, 'nf-widget nf-gallery nf-gallery--cols-' . $cols) . '>' . $items . '</div>';
+            },
+        ]);
+
+        $this->register('video', [
+            'label'    => 'Видео',
+            'category' => 'Расширенное',
+            'icon'     => '<svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M4 6h16v12H4V6zm2 2v8h12V8H6zm2 1l6 3-6 3V9z"/></svg>',
+            'fields'   => [
+                'url' => ['type' => 'url', 'label' => 'Ссылка (YouTube/Vimeo или .mp4)', 'default' => ''],
+            ],
+            'design'   => ['spacing', 'align'],
+            'render'   => function (array $d, array $node): string {
+                $url = (string) ($d['url'] ?? '');
+                if ($url === '') {
+                    return '';
+                }
+                $inner = '';
+                if (preg_match('#(?:youtube\.com/(?:watch\?v=|embed/)|youtu\.be/)([A-Za-z0-9_-]{6,})#', $url, $m)) {
+                    $inner = '<iframe src="https://www.youtube.com/embed/' . e($m[1]) . '" frameborder="0" allowfullscreen></iframe>';
+                } elseif (preg_match('#vimeo\.com/(\d+)#', $url, $m)) {
+                    $inner = '<iframe src="https://player.vimeo.com/video/' . e($m[1]) . '" frameborder="0" allowfullscreen></iframe>';
+                } elseif (preg_match('#\.(mp4|webm|ogg)$#i', $url)) {
+                    $inner = '<video controls preload="metadata" src="' . e($url) . '"></video>';
+                } else {
+                    $inner = '<iframe src="' . e($url) . '" frameborder="0" allowfullscreen></iframe>';
+                }
+                return '<div ' . Renderer::attrs($node, 'nf-widget nf-video') . '>' . $inner . '</div>';
+            },
+        ]);
+
+        $this->register('accordion', [
+            'label'    => 'Аккордеон',
+            'category' => 'Расширенное',
+            'icon'     => '<svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M4 5h16v2H4V5zm0 5h16v2H4v-2zm0 5h16v2H4v-2zm0 5h10v2H4v-2z"/></svg>',
+            'fields'   => [
+                'items' => ['type' => 'textarea', 'label' => 'Пункты: «Заголовок || Текст» (по строке)', 'default' => ''],
+            ],
+            'design'   => ['spacing'],
+            'render'   => function (array $d, array $node): string {
+                $lines = preg_split('/\r\n|\r|\n/', (string) ($d['items'] ?? ''));
+                $lines = array_values(array_filter(array_map('trim', (array) $lines)));
+                if (!$lines) {
+                    return '';
+                }
+                $html = '';
+                foreach ($lines as $i => $line) {
+                    $parts = explode('||', $line, 2);
+                    $title = trim($parts[0] ?? '');
+                    $content = trim($parts[1] ?? '');
+                    $html .= '<details class="nf-acc-item"' . ($i === 0 ? ' open' : '') . '>'
+                        . '<summary>' . e($title) . '</summary>'
+                        . '<div class="nf-acc-body">' . e($content) . '</div>'
+                        . '</details>';
+                }
+                return '<div ' . Renderer::attrs($node, 'nf-widget nf-accordion') . '>' . $html . '</div>';
+            },
+        ]);
+
+        $this->register('tabs', [
+            'label'    => 'Табы',
+            'category' => 'Расширенное',
+            'icon'     => '<svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z"/></svg>',
+            'fields'   => [
+                'items' => ['type' => 'textarea', 'label' => 'Вкладки: «Заголовок || Текст» (по строке)', 'default' => ''],
+            ],
+            'design'   => ['spacing'],
+            'render'   => function (array $d, array $node): string {
+                $lines = preg_split('/\r\n|\r|\n/', (string) ($d['items'] ?? ''));
+                $lines = array_values(array_filter(array_map('trim', (array) $lines)));
+                if (!$lines) {
+                    return '';
+                }
+                $uid = substr((string) $node['id'], -6);
+                $inputs = '';
+                $labels = '';
+                $panels = '';
+                foreach ($lines as $i => $line) {
+                    $parts = explode('||', $line, 2);
+                    $title = trim($parts[0] ?? '');
+                    $content = trim($parts[1] ?? '');
+                    $id = 'nf-tab-' . $uid . '-' . $i;
+                    $inputs .= '<input type="radio" name="nf-tabs-' . $uid . '" id="' . e($id) . '"' . ($i === 0 ? ' checked' : '') . '>';
+                    $labels .= '<label class="nf-tabs-label" for="' . e($id) . '">' . e($title) . '</label>';
+                    $panels .= '<div class="nf-tabs-panel">' . e($content) . '</div>';
+                }
+                return '<div ' . Renderer::attrs($node, 'nf-widget nf-tabs') . '>'
+                    . $inputs
+                    . '<div class="nf-tabs-labels">' . $labels . '</div>'
+                    . '<div class="nf-tabs-panels">' . $panels . '</div>'
+                    . '</div>';
+            },
+        ]);
+
+        $this->register('posts', [
+            'label'    => 'Лента записей',
+            'category' => 'Расширенное',
+            'icon'     => '<svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M4 4h16v2H4V4zm0 4h16v2H4V8zm0 4h10v2H4v-2zm0 4h7v2H4v-2z"/></svg>',
+            'fields'   => [
+                'count' => ['type' => 'number', 'label' => 'Количество', 'default' => 3],
+            ],
+            'design'   => ['spacing'],
+            'render'   => function (array $d, array $node): string {
+                $count = max(1, min(12, (int) ($d['count'] ?? 3)));
+                $posts = array_slice(\NetFree\Content\PostRepository::published(), 0, $count);
+                if (!$posts) {
+                    return '';
+                }
+                $items = '';
+                foreach ($posts as $post) {
+                    $items .= '<article class="nf-post-card">'
+                        . '<a class="nf-post-card-title" href="' . e(url('blog/' . ($post['slug'] ?? ''))) . '">' . e($post['title'] ?? '') . '</a>'
+                        . '<div class="nf-post-card-excerpt">' . e($post['excerpt'] ?? '') . '</div>'
+                        . '</article>';
+                }
+                return '<div ' . Renderer::attrs($node, 'nf-widget nf-posts') . '>' . $items . '</div>';
+            },
+        ]);
+
+        $this->register('cta', [
+            'label'    => 'CTA',
+            'category' => 'Расширенное',
+            'icon'     => '<svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>',
+            'fields'   => [
+                'title'      => ['type' => 'text', 'label' => 'Заголовок', 'default' => ''],
+                'text'       => ['type' => 'richtext', 'label' => 'Текст', 'default' => ''],
+                'buttonText' => ['type' => 'text', 'label' => 'Текст кнопки', 'default' => 'Подробнее'],
+                'buttonUrl'  => ['type' => 'url', 'label' => 'Ссылка кнопки', 'default' => '#'],
+            ],
+            'design'   => ['spacing'],
+            'render'   => function (array $d, array $node): string {
+                $title = trim((string) ($d['title'] ?? ''));
+                $text = (string) ($d['text'] ?? '');
+                $btnText = trim((string) ($d['buttonText'] ?? ''));
+                $btnUrl = (string) ($d['buttonUrl'] ?? '');
+                $html = '';
+                if ($title !== '') {
+                    $html .= '<h3 class="nf-cta-title">' . e($title) . '</h3>';
+                }
+                if ($text !== '') {
+                    $html .= '<div class="nf-cta-text">' . $text . '</div>';
+                }
+                if ($btnText !== '' && $btnUrl !== '') {
+                    $html .= '<a class="nf-btn" href="' . e($btnUrl) . '">' . e($btnText) . '</a>';
+                }
+                return '<div ' . Renderer::attrs($node, 'nf-widget nf-cta') . '>' . $html . '</div>';
+            },
+        ]);
+
+        $this->register('form', [
+            'label'    => 'Форма',
+            'category' => 'Расширенное',
+            'icon'     => '<svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M4 4h16v16H4V4zm2 2v2h12V6H6zm0 4v2h12v-2H6zm0 4v2h8v-2H6z"/></svg>',
+            'fields'   => [
+                'title'      => ['type' => 'text', 'label' => 'Заголовок', 'default' => ''],
+                'action'     => ['type' => 'url', 'label' => 'URL обработчика', 'default' => ''],
+                'buttonText' => ['type' => 'text', 'label' => 'Текст кнопки', 'default' => 'Отправить'],
+            ],
+            'design'   => ['spacing'],
+            'render'   => function (array $d, array $node): string {
+                $title = trim((string) ($d['title'] ?? ''));
+                $action = (string) ($d['action'] ?? '');
+                $btnText = trim((string) ($d['buttonText'] ?? ''));
+                if ($btnText === '') {
+                    $btnText = 'Отправить';
+                }
+                $html = '';
+                if ($title !== '') {
+                    $html .= '<h3 class="nf-form-title">' . e($title) . '</h3>';
+                }
+                $html .= '<form class="nf-form" method="post"' . ($action !== '' ? ' action="' . e($action) . '"' : '') . '>'
+                    . '<input type="text" name="name" placeholder="Имя" required>'
+                    . '<input type="email" name="email" placeholder="Email" required>'
+                    . '<textarea name="message" placeholder="Сообщение" rows="4"></textarea>'
+                    . '<button type="submit" class="nf-btn">' . e($btnText) . '</button>'
+                    . '</form>';
+                return '<div ' . Renderer::attrs($node, 'nf-widget nf-form') . '>' . $html . '</div>';
+            },
+        ]);
     }
 }

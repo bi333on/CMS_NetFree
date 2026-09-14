@@ -781,7 +781,7 @@
                         node.data[key] = control.value;
                         commitContentEdit(sel);
                     });
-                } else if (ftype === 'richtext' || ftype === 'html') {
+                } else if (ftype === 'textarea' || ftype === 'richtext' || ftype === 'html') {
                     control = document.createElement('textarea');
                     control.value = node.data[key] || '';
                     control.addEventListener('change', function () {
