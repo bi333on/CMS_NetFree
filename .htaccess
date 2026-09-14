@@ -1,0 +1,25 @@
+# NetFree — конфигурация Apache (или общий хостинг).
+# Веб-корень должен указывать на папку public/.
+# Если это невозможно и корень = корень проекта, этот .htaccess закрывает
+# доступ к важным файлам и перенаправляет запросы на public/index.php.
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Все запросы направляем в public/index.php, кроме реально существующих файлов.
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+# Закрываем прямой доступ к чувствительным каталогам и файлам.
+<IfModule mod_authz_core.c>
+    <FilesMatch "\.(env|ini|log|sql|md)$">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+
+# Если .htaccess лежит в корне проекта (не в public/), дополнительно закрываем каталоги.
+<IfModule mod_rewrite.c>
+    RewriteRule ^(app|config|storage|admin|plugins|themes)(/|$) - [F,L]
+</IfModule>

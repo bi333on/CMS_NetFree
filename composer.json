@@ -1,0 +1,22 @@
+{
+    "name": "netfree/netfree",
+    "description": "NetFree — модульная PHP CMS с архитектурой в стиле WordPress: хуки, плагины и защищённый REST API.",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": ">=8.0",
+        "ext-pdo": "*",
+        "ext-pdo_mysql": "*",
+        "ext-json": "*",
+        "ext-openssl": "*",
+        "ext-mbstring": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "NetFree\\": "app/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true
+    }
+}

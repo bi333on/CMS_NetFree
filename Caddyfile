@@ -1,0 +1,28 @@
+# NetFree — конфигурация для веб-сервера Caddy.
+# Веб-корень: только папка public/. Всё остальное (ядро, конфиги, плагины)
+# недоступно извне — это основа защиты закрытого кода.
+
+example.com {
+    root * /var/www/netfree/public
+
+    encode gzip
+
+    php_fastcgi unix//run/php/php8.2-fpm.sock
+
+    # Все запросы на фронт-контроллер.
+    try_files {path} /index.php?{query}
+
+    # Статика темы.
+    handle_path /assets/* {
+        root * /var/www/netfree/themes/default
+        file_server
+    }
+
+    # Явно запрещаем доступ к скрытым и системным файлам.
+    @deny path /install.php /composer.json /composer.lock
+    respond @deny 404
+
+    log {
+        output file /var/log/caddy/netfree.log
+    }
+}

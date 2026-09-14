@@ -1,0 +1,8 @@
+{
+    "name": "seo-basic",
+    "display_name": "SEO Basic",
+    "description": "Добавляет meta description и Open Graph на страницы через хуки NetFree.",
+    "version": "1.0.0",
+    "author": "NetFree",
+    "enabled": true
+}
