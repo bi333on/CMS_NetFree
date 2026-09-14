@@ -54,9 +54,23 @@ class Builder
         return $entity;
     }
 
+    protected static ?string $blocksCss = null;
+
+    protected static function blocksCss(): string
+    {
+        if (self::$blocksCss === null) {
+            $path = \NetFree\Application::getInstance()->basePath . '/core-assets/nf-blocks.css';
+            self::$blocksCss = is_file($path) ? (string) file_get_contents($path) : '';
+        }
+        return self::$blocksCss;
+    }
+
     public static function printHeadCss(): void
     {
-        echo "\n<link rel=\"stylesheet\" href=\"" . e(url('nf-assets/nf-blocks.css?v=' . NF_VERSION)) . "\">";
+        $css = self::blocksCss();
+        if ($css !== '') {
+            echo "\n<style id=\"nf-blocks-css\">" . $css . "</style>";
+        }
 
         if (self::$headCss !== '') {
             echo "\n<style id=\"nf-page-css\">" . self::$headCss . "</style>\n";

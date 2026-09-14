@@ -1,6 +1,17 @@
 <?php
 /** @var string $type @var int $id @var string $title @var string $document @var string $canvasUrl @var string $backUrl */
 $adminTitle = 'Конструктор — NetFree';
+
+// Ассеты инлайним: на некоторых хостингах статика через /nf-assets не проксируется в PHP.
+$builderCss = '';
+$builderJs  = '';
+$coreAssets = dirname(__DIR__, 2) . '/core-assets';
+if (is_file($coreAssets . '/builder.css')) {
+    $builderCss = (string) file_get_contents($coreAssets . '/builder.css');
+}
+if (is_file($coreAssets . '/builder.js')) {
+    $builderJs = str_replace('</script', '<\/script', (string) file_get_contents($coreAssets . '/builder.js'));
+}
 ?>
 <!DOCTYPE html>
 <html lang="ru">
@@ -8,7 +19,7 @@ $adminTitle = 'Конструктор — NetFree';
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= e($title ?: 'Конструктор') ?> — NetFree</title>
-    <link rel="stylesheet" href="<?= e(url('nf-assets/builder.css?v=' . NF_VERSION)) ?>">
+    <style><?= $builderCss ?></style>
 </head>
 <body class="nf-builder-body">
 <div id="nf-builder">
@@ -78,6 +89,6 @@ window.NF_BUILDER_CONFIG = {
     autosave: <?= $autosave ?>
 };
 </script>
-<script src="<?= e(url('nf-assets/builder.js?v=' . NF_VERSION)) ?>"></script>
+<script><?= $builderJs ?></script>
 </body>
 </html>
