@@ -1,4 +1,5 @@
 <?php
+$needsEditor = true; // модал медиа + TinyMCE в подвале
 $adminTitle = ($post ? 'Редактирование записи' : 'Новая запись') . ' — NetFree';
 $title     = $post['title'] ?? '';
 $slug      = $post['slug'] ?? '';

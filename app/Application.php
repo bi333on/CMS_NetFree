@@ -69,6 +69,8 @@ class Application
         $this->theme   = new Theme($this->config->get('theme.active', 'default'));
         $this->plugins = new PluginManager($this->basePath);
 
+        \NetFree\Builder\Builder::boot();
+
         $this->registerRoutes();
         $this->booted = true;
     }
@@ -82,6 +84,17 @@ class Application
         // Ассеты активной темы.
         $this->router->get('/assets/{file}', function (string $file) {
             $path = $this->basePath . '/themes/' . $this->theme->name() . '/assets/' . basename($file);
+            if (!is_file($path)) {
+                return (new Response())->setStatus(404)->setBody('Not found');
+            }
+            $mime = str_ends_with($file, '.css') ? 'text/css' : (str_ends_with($file, '.js') ? 'application/javascript' : 'application/octet-stream');
+            return (new Response())->setHeader('Content-Type', $mime)->setBody((string) file_get_contents($path));
+        });
+
+        // Ассеты ядра (конструктор). Префикс /assets уже занят темой.
+        $this->router->get('/nf-assets/{file}', function (string $file) {
+            $file = basename($file);
+            $path = $this->basePath . '/core-assets/' . $file;
             if (!is_file($path)) {
                 return (new Response())->setStatus(404)->setBody('Not found');
             }
@@ -292,6 +305,36 @@ class Application
 
         $this->router->post('/admin/ajax/media/upload', function () use ($mediaAjax) {
             return $mediaAjax->upload($this);
+        });
+
+        // Визуальный конструктор.
+        $builderAjax = new \NetFree\Builder\BuilderAjax();
+        $builderCtrl = new \NetFree\Builder\BuilderController();
+
+        $this->router->get('/admin/builder/{type}/{id}', function (string $type, string $id) use ($builderCtrl) {
+            if (!is_logged_in()) {
+                return (new Response())->redirect('/admin/login');
+            }
+            return $builderCtrl->shell($this, $type, (int) $id);
+        });
+
+        $this->router->get('/admin/builder/canvas/{type}/{id}', function (string $type, string $id) use ($builderCtrl) {
+            if (!is_logged_in()) {
+                return (new Response())->redirect('/admin/login');
+            }
+            return $builderCtrl->canvas($this, $type, (int) $id);
+        });
+
+        $this->router->get('/admin/ajax/builder/blocks', function () use ($builderAjax) {
+            return $builderAjax->blocks($this);
+        });
+
+        $this->router->post('/admin/ajax/builder/render', function () use ($builderAjax) {
+            return $builderAjax->render($this);
+        });
+
+        $this->router->post('/admin/ajax/builder/save', function () use ($builderAjax) {
+            return $builderAjax->save($this);
         });
     }
 

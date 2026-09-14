@@ -68,6 +68,15 @@ class Request
         return $this->post[$key] ?? $this->query[$key] ?? $default;
     }
 
+    /**
+     * Есть ли ключ в теле POST-запроса (независимо от значения).
+     * Нужно для чекбоксов: снятый чекбокс в $_POST не приходит вовсе.
+     */
+    public function has(string $key): bool
+    {
+        return array_key_exists($key, $this->post);
+    }
+
     public function isJson(): bool
     {
         return str_contains($this->header('Content-Type', ''), 'application/json');

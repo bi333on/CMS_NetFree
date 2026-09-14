@@ -39,6 +39,11 @@ class PostRepository
         );
     }
 
+    protected static function applyHooks(array $post): array
+    {
+        return (array) app()->hooks->applyFilters('netfree.post_data', $post);
+    }
+
     public static function bySlug(string $slug): ?array
     {
         $post = Database::first(
@@ -48,17 +53,18 @@ class PostRepository
              WHERE p.slug = ? AND p.status = "published"',
             [$slug]
         );
-        return $post ? (array) app()->hooks->applyFilters('netfree.post_data', $post) : null;
+        return $post ? self::applyHooks($post) : null;
     }
 
     public static function byId(int $id): ?array
     {
-        return Database::first(
-            'SELECT p.*, c.name AS category_name FROM posts p
+        $post = Database::first(
+            'SELECT p.*, c.name AS category_name, c.slug AS category_slug FROM posts p
              LEFT JOIN categories c ON c.id = p.category_id
              WHERE p.id = ?',
             [$id]
         );
+        return $post ? self::applyHooks($post) : null;
     }
 
     public static function byCategory(string $categorySlug): array

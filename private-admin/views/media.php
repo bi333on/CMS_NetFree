@@ -14,7 +14,7 @@
 
     <form method="post" action="<?= e(url('admin/media/upload')) ?>" enctype="multipart/form-data" style="margin-bottom:20px;">
         <?= csrf_field() ?>
-        <label>Загрузить файл (jpg, png, gif, webp, svg, pdf; до 10 МБ)</label>
+        <label>Загрузить файл (jpg, png, gif, webp, pdf; до 10 МБ)</label>
         <input type="file" name="file" required>
         <div style="margin-top:10px;">
             <button type="submit" class="btn">Загрузить</button>

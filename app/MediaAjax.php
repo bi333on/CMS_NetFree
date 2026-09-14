@@ -12,7 +12,7 @@ use NetFree\Content\MediaRepository;
 class MediaAjax
 {
     /**
-     * Список медиафайлов (JSON).
+     * Список медиафайлов (JSON) с поиском и пагинацией.
      */
     public function list(Application $app): Response
     {
@@ -20,16 +20,31 @@ class MediaAjax
             return (new Response())->json(['error' => 'Unauthorized'], 401);
         }
 
+        $q       = trim((string) ($app->request->query['q'] ?? ''));
+        $perPage = max(1, min(100, (int) ($app->request->query['per_page'] ?? 40)));
+        $page    = max(1, (int) ($app->request->query['page'] ?? 1));
+        $offset  = ($page - 1) * $perPage;
+
+        $total = MediaRepository::count($q);
         $items = array_map(function (array $m) {
             return [
-                'id'   => (int) $m['id'],
-                'url'  => '/uploads/' . $m['filename'],
-                'name' => $m['original_name'],
-                'mime' => $m['mime'],
+                'id'     => (int) $m['id'],
+                'url'    => '/uploads/' . $m['filename'],
+                'name'   => $m['original_name'],
+                'mime'   => $m['mime'],
+                'alt'    => $m['alt'] ?? '',
+                'title'  => $m['title'] ?? '',
+                'width'  => $m['width'] ?? null,
+                'height' => $m['height'] ?? null,
             ];
-        }, MediaRepository::all());
+        }, MediaRepository::search($q, $perPage, $offset));
 
-        return (new Response())->json(['items' => $items]);
+        return (new Response())->json([
+            'items'    => $items,
+            'total'    => $total,
+            'page'     => $page,
+            'per_page' => $perPage,
+        ]);
     }
 
     /**

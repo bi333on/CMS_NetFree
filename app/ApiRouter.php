@@ -56,7 +56,11 @@ class ApiRouter
         $resp = new Response();
 
         if ($method === 'GET' && $path === '/pages') {
-            $this->send($resp, 200, ['pages' => PageRepository::all()]);
+            $pages = array_map(function (array $p) {
+                unset($p['content_blocks'], $p['content_css']);
+                return $p;
+            }, PageRepository::all());
+            $this->send($resp, 200, ['pages' => $pages]);
             return;
         }
         if ($method === 'GET' && preg_match('#^/pages/([^/]+)$#', $path, $m)) {
@@ -65,7 +69,7 @@ class ApiRouter
                 $this->send($resp, 404, ['error' => 'Page not found']);
                 return;
             }
-            $this->send($resp, 200, ['page' => $page]);
+            $this->send($resp, 200, ['page' => self::exposePage($page)]);
             return;
         }
         if ($method === 'POST' && $path === '/pages') {
@@ -185,5 +189,19 @@ class ApiRouter
     {
         $resp->json($data, $status)->send();
         exit;
+    }
+
+    /**
+     * Готовит страницу к выдаче в API: структурированный content_blocks — отдаём
+     * (декодированным), а сгенерированный CSS — скрываем.
+     */
+    protected static function exposePage(array $page): array
+    {
+        if (isset($page['content_blocks']) && is_string($page['content_blocks'])) {
+            $decoded = json_decode($page['content_blocks'], true);
+            $page['content_blocks'] = is_array($decoded) ? $decoded : null;
+        }
+        unset($page['content_css']);
+        return $page;
     }
 }

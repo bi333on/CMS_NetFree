@@ -1,4 +1,5 @@
 <?php
+$needsEditor = true; // модал медиа + TinyMCE в подвале
 $adminTitle = ($page ? 'Редактирование' : 'Новая страница') . ' — NetFree';
 $title    = $page['title'] ?? '';
 $slug     = $page['slug'] ?? '';

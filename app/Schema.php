@@ -35,7 +35,11 @@ class Schema
                 title VARCHAR(255) NOT NULL,
                 slug VARCHAR(190) NOT NULL,
                 content LONGTEXT NOT NULL,
+                content_blocks LONGTEXT NULL,
+                content_css MEDIUMTEXT NOT NULL DEFAULT '',
+                editor_mode VARCHAR(20) NOT NULL DEFAULT 'classic',
                 meta_desc VARCHAR(320) NOT NULL DEFAULT '',
+                featured_image VARCHAR(512) NOT NULL DEFAULT '',
                 is_published TINYINT(1) NOT NULL DEFAULT 1,
                 created_at DATETIME NOT NULL,
                 updated_at DATETIME NOT NULL,
@@ -78,6 +82,33 @@ class Schema
             "CREATE TABLE IF NOT EXISTS options (
                 `key` VARCHAR(190) NOT NULL PRIMARY KEY,
                 `value` TEXT NOT NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+        );
+
+        $pdo->exec(
+            "CREATE TABLE IF NOT EXISTS revisions (
+                id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                entity_type VARCHAR(20) NOT NULL,
+                entity_id INT UNSIGNED NOT NULL,
+                user_id INT UNSIGNED NULL,
+                title VARCHAR(255) NOT NULL DEFAULT '',
+                content LONGTEXT NOT NULL,
+                content_blocks LONGTEXT NULL,
+                content_css MEDIUMTEXT NULL,
+                is_autosave TINYINT(1) NOT NULL DEFAULT 0,
+                created_at DATETIME NOT NULL,
+                KEY idx_revisions_entity (entity_type, entity_id, created_at)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+        );
+
+        $pdo->exec(
+            "CREATE TABLE IF NOT EXISTS preview_tokens (
+                token CHAR(32) NOT NULL PRIMARY KEY,
+                entity_type VARCHAR(20) NOT NULL,
+                entity_id INT UNSIGNED NOT NULL,
+                revision_id INT UNSIGNED NULL,
+                expires_at DATETIME NOT NULL,
+                KEY idx_preview_expires (expires_at)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
         );
 

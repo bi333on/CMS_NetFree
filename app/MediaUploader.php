@@ -13,16 +13,17 @@ use RuntimeException;
  */
 class MediaUploader
 {
-    /** Допустимые расширения и MIME-типы. */
+    /** Допустимые расширения и MIME-типы (по умолчанию без SVG). */
     protected const ALLOWED = [
         'jpg'  => ['image/jpeg'],
         'jpeg' => ['image/jpeg'],
         'png'  => ['image/png'],
         'gif'  => ['image/gif'],
         'webp' => ['image/webp'],
-        'svg'  => ['image/svg+xml'],
         'pdf'  => ['application/pdf'],
     ];
+
+    protected const SVG_MIME = 'image/svg+xml';
 
     /** Максимальный размер файла (байты). */
     protected const MAX_SIZE = 10 * 1024 * 1024; // 10 МБ
@@ -40,14 +41,21 @@ class MediaUploader
 
         $original = (string) ($file['name'] ?? 'file');
         $ext = strtolower(pathinfo($original, PATHINFO_EXTENSION));
-        if (!array_key_exists($ext, self::ALLOWED)) {
+
+        $allowed = self::ALLOWED;
+        // SVG может нести скрипт — разрешаем только явной настройкой.
+        if (SettingsRepository::get('media_allow_svg', '0') === '1') {
+            $allowed['svg'] = [self::SVG_MIME];
+        }
+
+        if (!array_key_exists($ext, $allowed)) {
             throw new RuntimeException('Недопустимый тип файла.');
         }
 
         // Проверяем фактический MIME (не доверяем только расширению).
         $finfo = new \finfo(FILEINFO_MIME_TYPE);
         $detected = $finfo->file($file['tmp_name']);
-        if (!in_array($detected, self::ALLOWED[$ext], true)) {
+        if (!in_array($detected, $allowed[$ext], true)) {
             throw new RuntimeException('Содержимое файла не соответствует типу. Отказано в загрузке.');
         }
 
@@ -64,11 +72,26 @@ class MediaUploader
             throw new RuntimeException('Не удалось сохранить файл. Проверьте права на public/uploads.');
         }
 
+        // Размеры растровых изображений (SVG/PDF не имеют).
+        $width = null;
+        $height = null;
+        if (str_starts_with($detected, 'image/') && $detected !== self::SVG_MIME) {
+            $info = @getimagesize($dest);
+            if (is_array($info) && isset($info[0], $info[1])) {
+                $width  = (int) $info[0];
+                $height = (int) $info[1];
+            }
+        }
+
         $id = \NetFree\Content\MediaRepository::create([
             'filename'      => $filename,
             'original_name' => $original,
             'mime'          => $detected,
             'size'          => $size,
+            'alt'           => '',
+            'title'         => '',
+            'width'         => $width,
+            'height'        => $height,
         ]);
 
         return [

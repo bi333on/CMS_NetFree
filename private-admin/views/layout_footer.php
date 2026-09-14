@@ -3,6 +3,7 @@
 </div>
 <?php endif; ?>
 
+<?php if (is_logged_in() && ($needsEditor ?? false)): ?>
 <!-- Модал медиа-библиотеки -->
 <div class="nf-modal-overlay" id="nfMediaModal">
     <div class="nf-modal">
@@ -19,7 +20,7 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/tinymce@6/tinymce.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tinymce@6.8.5/tinymce.min.js" integrity="sha384-lo8/CN/iRaTSWve/rcVNU06/qOA1Qn47bB4ENNcUQ7tLVBqPca8yRbxhx5ic7UZM" crossorigin="anonymous"></script>
 <script>
 (function () {
     function esc(s) {
@@ -50,7 +51,7 @@
             menubar: false,
             branding: false,
             promotion: false,
-            plugins: 'lists link image code autoresize paste',
+            plugins: 'lists link image code autoresize',
             toolbar: 'undo redo | h1 h2 h3 h4 h5 h6 | bold italic underline strikethrough | bullist numlist | link image | alignleft aligncenter alignright | blockquote | removeformat code',
             block_formats: 'Параграф=p; Заголовок 1=h1; Заголовок 2=h2; Заголовок 3=h3; Заголовок 4=h4; Заголовок 5=h5; Заголовок 6=h6; Цитата=blockquote',
             content_style: 'body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 15px; line-height: 1.65; color: #334155; } p { margin: 0 0 12px; } h1 { font-size: 2em; margin: 1.2em 0 .5em; } h2 { font-size: 1.6em; margin: 1.3em 0 .5em; padding-bottom: .3em; border-bottom: 1px solid #e2e8f0; } h3 { font-size: 1.35em; margin: 1.2em 0 .4em; } h4 { font-size: 1.15em; margin: 1.1em 0 .4em; } h5 { font-size: 1em; margin: 1em 0 .4em; } h6 { font-size: .9em; margin: 1em 0 .4em; color: #64748b; text-transform: uppercase; letter-spacing: .03em; } ul, ol { padding-left: 1.6em; } li { margin-bottom: .3em; } blockquote { margin: 1.2em 0; padding: 10px 16px; border-left: 4px solid #2563eb; background: #eff6ff; border-radius: 0 8px 8px 0; } img { max-width: 100%; height: auto; border-radius: 10px; } code { background: #f1f5f9; color: #be185d; padding: 2px 6px; border-radius: 4px; }',
@@ -182,5 +183,6 @@
     });
 })();
 </script>
+<?php endif; ?>
 </body>
 </html>

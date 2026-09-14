@@ -1,0 +1,90 @@
+/* NetFree Builder — базовые стили сетки секций/колонок.
+   Лежат статикой и не генерируются на каждую страницу. */
+
+.nf-section {
+    box-sizing: border-box;
+}
+
+.nf-section--boxed {
+    max-width: 1040px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 24px;
+    padding-right: 24px;
+}
+
+.nf-section--full {
+    width: 100%;
+}
+
+.nf-row {
+    display: flex;
+    flex-wrap: wrap;
+    margin-left: calc(var(--nf-gap, 24px) / -2);
+    margin-right: calc(var(--nf-gap, 24px) / -2);
+}
+
+.nf-col {
+    box-sizing: border-box;
+    padding-left: calc(var(--nf-gap, 24px) / 2);
+    padding-right: calc(var(--nf-gap, 24px) / 2);
+    flex: 0 0 100%;
+    max-width: 100%;
+}
+
+/* Якорь для ссылок-навигации (#about). */
+.nf-anchor {
+    display: block;
+    position: relative;
+    top: -80px;
+    visibility: hidden;
+    height: 0;
+}
+
+.nf-widget {
+    box-sizing: border-box;
+}
+
+.nf-image {
+    margin: 0;
+}
+.nf-image img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    border-radius: var(--nf-radius, 14px);
+}
+.nf-image figcaption {
+    color: var(--nf-muted, #64748b);
+    font-size: 0.9rem;
+    margin-top: 8px;
+}
+
+.nf-btn {
+    display: inline-block;
+    background: var(--nf-accent, #2563eb);
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: 600;
+}
+.nf-btn:hover {
+    background: var(--nf-accent-hover, #1d4ed8);
+    color: #fff;
+}
+
+.nf-divider {
+    border: none;
+    border-top: 1px solid var(--nf-border, #e2e8f0);
+    margin: 2em 0;
+}
+
+.nf-quote {
+    border-left: 4px solid var(--nf-accent, #2563eb);
+    background: #eff6ff;
+    padding: 14px 20px;
+    border-radius: 0 10px 10px 0;
+    margin: 1.5em 0;
+    color: #334155;
+}

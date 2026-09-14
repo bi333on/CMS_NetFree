@@ -108,20 +108,18 @@ class AdminController
         $content = (string) $app->request->input('content', '');
         $meta  = trim((string) $app->request->input('meta_desc', ''));
         $featured = trim((string) $app->request->input('featured_image', ''));
-        $published = (int) (bool) $app->request->input('is_published', '1');
+        $published = $app->request->has('is_published') ? 1 : 0;
 
         if ($title === '' || $slug === '') {
-            $page = $id ? PageRepository::byId($id) : null;
             return $resp->setBody($this->render('page_form', [
-                'page'  => $page,
+                'page'  => $this->submittedPage($id, $title, $slug, $content, $meta, $featured, $published),
                 'error' => 'Заголовок обязателен.',
             ]));
         }
 
         if (PageRepository::slugExists($slug, $id ?: null)) {
-            $page = $id ? PageRepository::byId($id) : null;
             return $resp->setBody($this->render('page_form', [
-                'page'  => $page,
+                'page'  => $this->submittedPage($id, $title, $slug, $content, $meta, $featured, $published),
                 'error' => 'Такой URL (slug) уже занят.',
             ]));
         }
@@ -207,14 +205,14 @@ class AdminController
 
         if ($title === '' || $slug === '') {
             return (new Response())->setBody($this->render('post_form', [
-                'post'       => $id ? PostRepository::byId($id) : null,
+                'post'       => $this->submittedPost($id, $title, $slug, $content, $excerpt, $categoryId, $status, $featured),
                 'categories' => CategoryRepository::all(),
                 'error'      => 'Заголовок обязателен.',
             ]));
         }
         if (PostRepository::slugExists($slug, $id ?: null)) {
             return (new Response())->setBody($this->render('post_form', [
-                'post'       => $id ? PostRepository::byId($id) : null,
+                'post'       => $this->submittedPost($id, $title, $slug, $content, $excerpt, $categoryId, $status, $featured),
                 'categories' => CategoryRepository::all(),
                 'error'      => 'Такой URL (slug) уже занят.',
             ]));
@@ -415,6 +413,54 @@ class AdminController
                 'error'      => $e->getMessage(),
             ]));
         }
+    }
+
+    /**
+     * Собирает массив страницы для перерисовки формы: присланные данные поверх записи из БД,
+     * чтобы несохранённые правки не терялись при ошибке валидации.
+     */
+    protected function submittedPage(int $id, string $title, string $slug, string $content, string $meta, string $featured, int $published): array
+    {
+        $submitted = [
+            'id'             => $id,
+            'title'          => $title,
+            'slug'           => $slug,
+            'content'        => $content,
+            'meta_desc'      => $meta,
+            'featured_image' => $featured,
+            'is_published'   => $published,
+        ];
+        if ($id) {
+            $existing = PageRepository::byId($id);
+            if ($existing) {
+                $submitted = array_merge($existing, $submitted);
+            }
+        }
+        return $submitted;
+    }
+
+    /**
+     * То же для записей (постов).
+     */
+    protected function submittedPost(int $id, string $title, string $slug, string $content, string $excerpt, int $categoryId, string $status, string $featured): array
+    {
+        $submitted = [
+            'id'             => $id,
+            'title'          => $title,
+            'slug'           => $slug,
+            'content'        => $content,
+            'excerpt'        => $excerpt,
+            'category_id'    => $categoryId ?: null,
+            'status'         => $status,
+            'featured_image' => $featured,
+        ];
+        if ($id) {
+            $existing = PostRepository::byId($id);
+            if ($existing) {
+                $submitted = array_merge($existing, $submitted);
+            }
+        }
+        return $submitted;
     }
 
     protected function render(string $view, array $data = []): string
