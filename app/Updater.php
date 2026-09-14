@@ -20,11 +20,18 @@ class Updater
     }
 
     /**
-     * Выполняет обновление. Возвращает true при успехе, иначе бросает исключение.
+     * Выполняет обновление. Возвращает количество скопированных файлов.
      */
-    public function update(string $token = ''): void
+    public function update(string $token = ''): int
     {
         $repoUrl = SettingsRepository::get('update_repo', 'https://github.com/bi333on/CMS_NetFree');
+
+        if (!function_exists('curl_init')) {
+            throw new \RuntimeException('Расширение PHP curl не установлено — обновление невозможно.');
+        }
+        if (!class_exists('ZipArchive')) {
+            throw new \RuntimeException('Расширение PHP zip не установлено — обновление невозможно.');
+        }
 
         // Парсим owner/repo.
         $repoUrl = rtrim($repoUrl, '/');
@@ -94,7 +101,9 @@ class Updater
         if ($zip->open($tmpZip) !== true) {
             throw new \RuntimeException('Не удалось открыть архив обновления.');
         }
-        $zip->extractTo($tmpDir);
+        if (!$zip->extractTo($tmpDir)) {
+            throw new \RuntimeException('Не удалось распаковать архив обновления.');
+        }
         $zip->close();
         @unlink($tmpZip);
 
@@ -109,7 +118,7 @@ class Updater
         $sourceRoot = $base !== '' ? $tmpDir . '/' . $base : $tmpDir;
 
         // Копируем файлы (кроме config/env.php, storage и uploads).
-        $this->copyTree($sourceRoot, $this->app->basePath);
+        $copied = $this->copyTree($sourceRoot, $this->app->basePath);
 
         // Очистка временных файлов.
         $this->removeTree($tmpDir);
@@ -118,12 +127,20 @@ class Updater
         Migrations::run();
 
         SettingsRepository::set('last_update', date('Y-m-d H:i:s'));
+
+        // Сбрасываем OPcache, чтобы PHP не отдавал старые версии файлов.
+        if (function_exists('opcache_reset')) {
+            @opcache_reset();
+        }
+
+        return $copied;
     }
 
-    protected function copyTree(string $src, string $dst): void
+    protected function copyTree(string $src, string $dst): int
     {
+        $copied = 0;
         if (!is_dir($src)) {
-            return;
+            return $copied;
         }
         foreach (scandir($src) as $item) {
             if ($item === '.' || $item === '..') {
@@ -136,14 +153,18 @@ class Updater
             $s = $src . '/' . $item;
             $d = $dst . '/' . $item;
             if (is_dir($s)) {
-                if (!is_dir($d)) {
-                    @mkdir($d, 0755, true);
+                if (!is_dir($d) && !@mkdir($d, 0755, true)) {
+                    throw new \RuntimeException('Не удалось создать каталог: ' . $d);
                 }
-                $this->copyTree($s, $d);
+                $copied += $this->copyTree($s, $d);
             } else {
-                @copy($s, $d);
+                if (!@copy($s, $d)) {
+                    throw new \RuntimeException('Не удалось перезаписать файл (проверьте права): ' . $d);
+                }
+                $copied++;
             }
         }
+        return $copied;
     }
 
     protected function removeTree(string $dir): void

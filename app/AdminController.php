@@ -398,11 +398,11 @@ class AdminController
         }
         $token = trim((string) $app->request->input('github_token', ''));
         try {
-            (new Updater($app))->update($token);
+            $copied = (new Updater($app))->update($token);
             return (new Response())->setBody($this->render('update', [
                 'repo'       => SettingsRepository::get('update_repo', ''),
                 'lastUpdate' => SettingsRepository::get('last_update', ''),
-                'result'     => 'Обновление выполнено успешно.',
+                'result'     => 'Обновление выполнено успешно. Обновлено файлов: ' . $copied . '.',
                 'error'      => '',
             ]));
         } catch (\Throwable $e) {
