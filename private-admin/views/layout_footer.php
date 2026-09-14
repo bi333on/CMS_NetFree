@@ -51,7 +51,7 @@
             branding: false,
             promotion: false,
             plugins: 'lists link image code autoresize paste',
-            toolbar: 'undo redo | formatselect | bold italic underline strikethrough | bullist numlist | link image | alignleft aligncenter alignright | blockquote | removeformat code',
+            toolbar: 'undo redo | h1 h2 h3 h4 h5 h6 | bold italic underline strikethrough | bullist numlist | link image | alignleft aligncenter alignright | blockquote | removeformat code',
             block_formats: 'Параграф=p; Заголовок 1=h1; Заголовок 2=h2; Заголовок 3=h3; Заголовок 4=h4; Заголовок 5=h5; Заголовок 6=h6; Цитата=blockquote',
             content_style: 'body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 15px; line-height: 1.65; color: #334155; } p { margin: 0 0 12px; } h1 { font-size: 2em; margin: 1.2em 0 .5em; } h2 { font-size: 1.6em; margin: 1.3em 0 .5em; padding-bottom: .3em; border-bottom: 1px solid #e2e8f0; } h3 { font-size: 1.35em; margin: 1.2em 0 .4em; } h4 { font-size: 1.15em; margin: 1.1em 0 .4em; } h5 { font-size: 1em; margin: 1em 0 .4em; } h6 { font-size: .9em; margin: 1em 0 .4em; color: #64748b; text-transform: uppercase; letter-spacing: .03em; } ul, ol { padding-left: 1.6em; } li { margin-bottom: .3em; } blockquote { margin: 1.2em 0; padding: 10px 16px; border-left: 4px solid #2563eb; background: #eff6ff; border-radius: 0 8px 8px 0; } img { max-width: 100%; height: auto; border-radius: 10px; } code { background: #f1f5f9; color: #be185d; padding: 2px 6px; border-radius: 4px; }',
             forced_root_block: 'p',
@@ -66,6 +66,20 @@
                 args.content = splitBrToParagraphs(args.content);
             },
             setup: function (editor) {
+                // Отдельные кнопки заголовков H1-H6 на панели.
+                function addHeadingButton(name, tag) {
+                    editor.ui.registry.addButton(name, {
+                        text: tag.toUpperCase(),
+                        tooltip: 'Заголовок ' + tag.toUpperCase(),
+                        onAction: function () {
+                            editor.execCommand('mceToggleFormat', false, tag);
+                        }
+                    });
+                }
+                ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].forEach(function (tag) {
+                    addHeadingButton(tag, tag);
+                });
+
                 editor.on('init', function () {
                     editor.setContent(splitBrToParagraphs(editor.getContent()));
                 });
