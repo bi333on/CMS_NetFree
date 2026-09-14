@@ -3,9 +3,9 @@
  * NetFree — загрузчик установки (одним файлом).
  *
  * Назначение: вы загружаете на хостинг ОДИН этот файл, открываете его в браузере,
- * указываете данные БД/администратора и ссылку на репозиторий GitHub — загрузчик
- * скачивает архив CMS, распаковывает файлы в ту же директорию и перенаправляет
- * на веб-установщик (public/install.php).
+ * указываете ссылку на репозиторий GitHub (и токен для приватного репозитория) —
+ * загрузчик скачивает архив CMS, распаковывает файлы в ту же директорию и
+ * перенаправляет на веб-установщик (public/install.php).
  *
  * После установки обязательно удалите этот файл.
  */
@@ -21,8 +21,9 @@ $messages = [];
 
 /**
  * Скачивает zip-архив репозитория GitHub (codeload) и возвращает путь к файлу.
+ * Для приватных репозиториев передаётся персональный токен (PAT).
  */
-function download_repo(string $repoUrl, string $dest): string
+function download_repo(string $repoUrl, string $dest, string $token = ''): string
 {
     // Нормализуем ссылку в формат архива codeload.
     $repoUrl = rtrim($repoUrl, '/');
@@ -37,13 +38,20 @@ function download_repo(string $repoUrl, string $dest): string
         throw new RuntimeException('Не удалось распознать URL репозитория GitHub.');
     }
 
+    $headers = [
+        'User-Agent: NetFree-Installer/1.0',
+    ];
+    if ($token !== '') {
+        $headers[] = 'Authorization: token ' . $token;
+    }
+
     $ch = curl_init($archiveUrl);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_FOLLOWLOCATION => true,
         CURLOPT_SSL_VERIFYPEER => true,
         CURLOPT_TIMEOUT        => 120,
-        CURLOPT_USERAGENT      => 'NetFree-Installer/1.0',
+        CURLOPT_HTTPHEADER     => $headers,
     ]);
     $data = curl_exec($ch);
     $code = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
@@ -52,6 +60,12 @@ function download_repo(string $repoUrl, string $dest): string
 
     if ($data === false) {
         throw new RuntimeException('Ошибка загрузки: ' . $err);
+    }
+    if ($code === 404) {
+        throw new RuntimeException('Репозиторий не найден (404). Если он приватный — проверьте токен или название ветки.');
+    }
+    if ($code === 401 || $code === 403) {
+        throw new RuntimeException('Доступ запрещён (HTTP ' . $code . '). Для приватного репозитория укажите действующий GitHub-токен с правами repo.');
     }
     if ($code !== 200) {
         throw new RuntimeException('GitHub вернул HTTP ' . $code . '. Проверьте ссылку и ветку (по умолчанию main).');
@@ -135,6 +149,7 @@ function remove_dir(string $dir): void
 // ---------------------------------------------------------------------------
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $repoUrl = trim((string) ($_POST['repo_url'] ?? ''));
+    $token   = trim((string) ($_POST['github_token'] ?? ''));
     $rootDir = __DIR__;
 
     if ($repoUrl === '') {
@@ -149,7 +164,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $zipPath = sys_get_temp_dir() . '/netfree_' . bin2hex(random_bytes(4)) . '.zip';
-            download_repo($repoUrl, $zipPath);
+            download_repo($repoUrl, $zipPath, $token);
             extract_zip($zipPath, $rootDir);
             @unlink($zipPath);
 
@@ -195,6 +210,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <label>URL репозитория GitHub *</label>
             <input type="text" name="repo_url" placeholder="https://github.com/username/netfree" required>
             <p style="color:#6b7280;font-size:13px;">Например: <code>https://github.com/username/netfree</code>. Архив скачивается с ветки <code>main</code>.</p>
+
+            <label>GitHub-токен (для приватного репозитория)</label>
+            <input type="password" name="github_token" placeholder="ghp_..." autocomplete="off">
+            <p style="color:#6b7280;font-size:13px;">Оставьте пустым, если репозиторий публичный. Для приватного нужен Personal Access Token с правами <code>repo</code>. Токен нигде не сохраняется.</p>
+
             <button type="submit" class="btn">Скачать и распаковать</button>
         </form>
 
