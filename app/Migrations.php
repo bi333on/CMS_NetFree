@@ -10,7 +10,7 @@ namespace NetFree;
  */
 class Migrations
 {
-    protected const VERSION = 2;
+    protected const VERSION = 3;
 
     public static function run(): void
     {
@@ -21,6 +21,7 @@ class Migrations
 
         self::v1();
         self::v2();
+        self::v3();
 
         Database::execute(
             "INSERT INTO options (`key`, `value`) VALUES ('schema_version', ?)
@@ -32,6 +33,26 @@ class Migrations
     protected static function v1(): void
     {
         // Таблицы ядра уже создаются в Schema::install. Здесь ничего дополнительно.
+    }
+
+    protected static function columnExists(string $table, string $column): bool
+    {
+        $row = Database::first(
+            'SELECT COUNT(*) AS c FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?',
+            [$table, $column]
+        );
+        return (int) ($row['c'] ?? 0) > 0;
+    }
+
+    protected static function v3(): void
+    {
+        // Добавляем обложку страницам.
+        if (!self::columnExists('pages', 'featured_image')) {
+            Database::execute(
+                "ALTER TABLE pages ADD COLUMN featured_image VARCHAR(512) NOT NULL DEFAULT '' AFTER meta_desc"
+            );
+        }
     }
 
     protected static function v2(): void

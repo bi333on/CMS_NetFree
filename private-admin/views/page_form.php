@@ -4,6 +4,7 @@ $title    = $page['title'] ?? '';
 $slug     = $page['slug'] ?? '';
 $content  = $page['content'] ?? '';
 $meta     = $page['meta_desc'] ?? '';
+$featured = $page['featured_image'] ?? '';
 $published = isset($page) ? (bool) $page['is_published'] : true;
 ?>
 <?php include __DIR__ . '/layout_header.php'; ?>
@@ -50,6 +51,18 @@ $published = isset($page) ? (bool) $page['is_published'] : true;
                 <h3>SEO</h3>
                 <label>Meta description</label>
                 <input type="text" name="meta_desc" value="<?= e($meta) ?>">
+            </div>
+
+            <div class="nf-sidebox">
+                <h3>Изображение страницы</h3>
+                <div class="nf-featured-preview<?= $featured ? '' : ' empty' ?>" id="nfFeaturedPreview">
+                    <?= $featured ? '<img src="' . e($featured) . '" alt="">' : 'Изображение не выбрано' ?>
+                </div>
+                <input type="hidden" name="featured_image" id="nfFeaturedImage" value="<?= e($featured) ?>">
+                <div class="row">
+                    <button type="button" class="btn" style="flex:1;" onclick="nfPickFeatured()">Выбрать</button>
+                    <button type="button" class="btn danger" onclick="nfRemoveFeatured()">Убрать</button>
+                </div>
             </div>
         </div>
     </div>

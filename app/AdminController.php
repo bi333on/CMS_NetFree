@@ -107,6 +107,7 @@ class AdminController
         $slug  = slugify($slugInput !== '' ? $slugInput : $title);
         $content = (string) $app->request->input('content', '');
         $meta  = trim((string) $app->request->input('meta_desc', ''));
+        $featured = trim((string) $app->request->input('featured_image', ''));
         $published = (int) (bool) $app->request->input('is_published', '1');
 
         if ($title === '' || $slug === '') {
@@ -126,11 +127,12 @@ class AdminController
         }
 
         $data = [
-            'title'        => $title,
-            'slug'         => $slug,
-            'content'      => $content,
-            'meta_desc'    => $meta,
-            'is_published' => $published,
+            'title'          => $title,
+            'slug'           => $slug,
+            'content'        => $content,
+            'meta_desc'      => $meta,
+            'featured_image' => $featured,
+            'is_published'   => $published,
         ];
 
         if ($id) {
