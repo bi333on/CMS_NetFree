@@ -59,6 +59,6 @@ $featured  = $post['featured_image'] ?? '';
     </form>
 </div>
 
-<script>nfInitEditor('nfContent');</script>
+<script>document.addEventListener('DOMContentLoaded', function(){ nfInitEditor('nfContent'); });</script>
 
 <?php include __DIR__ . '/layout_footer.php'; ?>
