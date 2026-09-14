@@ -22,6 +22,7 @@
                 <td><?= e($p['slug']) ?></td>
                 <td><?= $p['is_published'] ? 'Опубликована' : 'Черновик' ?></td>
                 <td class="row">
+                    <a class="btn" href="<?= e(url('admin/builder/page/' . $p['id'])) ?>">Конструктор</a>
                     <a class="btn secondary" href="<?= e(url('admin/pages/edit/' . $p['id'])) ?>">Изменить</a>
                     <form method="post" action="<?= e(url('admin/pages/delete/' . $p['id'])) ?>" onsubmit="return confirm('Удалить страницу?')">
                         <?= csrf_field() ?>

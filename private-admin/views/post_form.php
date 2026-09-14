@@ -51,6 +51,9 @@ $featured  = $post['featured_image'] ?? '';
                     <option value="draft" <?= $status === 'draft' ? 'selected' : '' ?>>Черновик</option>
                 </select>
                 <button type="submit" class="btn">Сохранить</button>
+                <?php if ($post): ?>
+                    <a class="btn" style="margin-top:8px;display:block;text-align:center;" href="<?= e(url('admin/builder/post/' . $post['id'])) ?>">Собрать в конструкторе</a>
+                <?php endif; ?>
                 <a class="btn secondary" style="margin-top:8px;display:block;text-align:center;" href="<?= e(url('admin/posts')) ?>">Отмена</a>
             </div>
 

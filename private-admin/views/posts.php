@@ -23,6 +23,7 @@
                 <td><?= $p['status'] === 'published' ? 'Опубликована' : 'Черновик' ?></td>
                 <td><?= e($p['created_at']) ?></td>
                 <td class="row">
+                    <a class="btn" href="<?= e(url('admin/builder/post/' . $p['id'])) ?>">Конструктор</a>
                     <a class="btn secondary" href="<?= e(url('admin/posts/edit/' . $p['id'])) ?>">Изменить</a>
                     <form method="post" action="<?= e(url('admin/posts/delete/' . $p['id'])) ?>" onsubmit="return confirm('Удалить запись?')">
                         <?= csrf_field() ?>

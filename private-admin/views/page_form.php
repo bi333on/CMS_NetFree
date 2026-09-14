@@ -45,6 +45,9 @@ $published = isset($page) ? (bool) $page['is_published'] : true;
                     <input type="checkbox" name="is_published" value="1" <?= $published ? 'checked' : '' ?> style="width:auto;margin:0 6px 0 0;"> Опубликована
                 </label>
                 <button type="submit" class="btn" style="margin-top:10px;">Сохранить</button>
+                <?php if ($page): ?>
+                    <a class="btn" style="margin-top:8px;display:block;text-align:center;" href="<?= e(url('admin/builder/page/' . $page['id'])) ?>">Собрать в конструкторе</a>
+                <?php endif; ?>
                 <a class="btn secondary" style="margin-top:8px;display:block;text-align:center;" href="<?= e(url('admin/pages')) ?>">Отмена</a>
             </div>
 
