@@ -4,7 +4,7 @@
 <section class="not-found">
     <h1>404</h1>
     <p>Страница не найдена.</p>
-    <p><a href="<?= e(url('/')) ?>">На главную</a></p>
+    <p><a class="btn" href="<?= e(url('/')) ?>">На главную</a></p>
 </section>
 
 <?php get_footer(); ?>

@@ -132,3 +132,32 @@ if (!function_exists('slugify')) {
         return trim($text, '-');
     }
 }
+
+if (!function_exists('format_date')) {
+    /**
+     * Форматирует дату в человекочитаемый вид (русская локаль).
+     */
+    function format_date(?string $datetime, string $format = 'd.m.Y'): string
+    {
+        if (!$datetime) {
+            return '';
+        }
+        $ts = strtotime($datetime);
+        if ($ts === false) {
+            return $datetime;
+        }
+
+        $months = [
+            'Jan' => 'янв', 'Feb' => 'фев', 'Mar' => 'мар', 'Apr' => 'апр',
+            'May' => 'май', 'Jun' => 'июн', 'Jul' => 'июл', 'Aug' => 'авг',
+            'Sep' => 'сен', 'Oct' => 'окт', 'Nov' => 'ноя', 'Dec' => 'дек',
+        ];
+
+        $out = date($format, $ts);
+        if (str_contains($format, 'M')) {
+            $out = str_replace(array_keys($months), array_values($months), $out);
+        }
+        return $out;
+    }
+}
+
