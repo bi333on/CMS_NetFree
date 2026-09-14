@@ -103,7 +103,8 @@ class AdminController
 
         $id    = (int) $app->request->input('id', '0');
         $title = trim((string) $app->request->input('title', ''));
-        $slug  = slugify((string) $app->request->input('slug', $title));
+        $slugInput = trim((string) $app->request->input('slug', ''));
+        $slug  = slugify($slugInput !== '' ? $slugInput : $title);
         $content = (string) $app->request->input('content', '');
         $meta  = trim((string) $app->request->input('meta_desc', ''));
         $published = (int) (bool) $app->request->input('is_published', '1');
@@ -193,7 +194,8 @@ class AdminController
 
         $id    = (int) $app->request->input('id', '0');
         $title = trim((string) $app->request->input('title', ''));
-        $slug  = slugify((string) $app->request->input('slug', $title));
+        $slugInput = trim((string) $app->request->input('slug', ''));
+        $slug  = slugify($slugInput !== '' ? $slugInput : $title);
         $content = (string) $app->request->input('content', '');
         $excerpt = trim((string) $app->request->input('excerpt', ''));
         $categoryId = (int) $app->request->input('category_id', '0');
@@ -265,7 +267,8 @@ class AdminController
 
         $id   = (int) $app->request->input('id', '0');
         $name = trim((string) $app->request->input('name', ''));
-        $slug = slugify((string) $app->request->input('slug', $name));
+        $slugInput = trim((string) $app->request->input('slug', ''));
+        $slug = slugify($slugInput !== '' ? $slugInput : $name);
         $desc = trim((string) $app->request->input('description', ''));
 
         if ($name === '' || $slug === '') {
