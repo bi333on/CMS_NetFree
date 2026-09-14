@@ -22,8 +22,9 @@ $messages = [];
 /**
  * Скачивает zip-архив репозитория GitHub (codeload) и возвращает путь к файлу.
  * Для приватных репозиториев передаётся персональный токен (PAT).
+ * Если ветка не указана — пробует main, затем master.
  */
-function download_repo(string $repoUrl, string $dest, string $token = ''): string
+function download_repo(string $repoUrl, string $dest, string $token = '', string $branch = ''): string
 {
     // Нормализуем ссылку в формат архива codeload.
     $repoUrl = rtrim($repoUrl, '/');
@@ -32,11 +33,16 @@ function download_repo(string $repoUrl, string $dest, string $token = ''): strin
     if (preg_match('#github\.com/([^/]+)/([^/]+?)(?:/tree/([^/]+))?$#', $repoUrl, $m)) {
         $owner = $m[1];
         $repo  = $m[2];
-        $branch = $m[3] ?? '';
-        $archiveUrl = "https://codeload.github.com/{$owner}/{$repo}/zip/refs/heads/" . ($branch ?: 'main');
+        // Ветка может быть задана в URL (…/tree/<branch>) или в поле формы.
+        if ($branch === '' && isset($m[3]) && $m[3] !== '') {
+            $branch = $m[3];
+        }
     } else {
         throw new RuntimeException('Не удалось распознать URL репозитория GitHub.');
     }
+
+    // Порядок попыток, если ветка не указана явно.
+    $branches = $branch !== '' ? [$branch] : ['main', 'master'];
 
     $headers = [
         'User-Agent: NetFree-Installer/1.0',
@@ -45,36 +51,50 @@ function download_repo(string $repoUrl, string $dest, string $token = ''): strin
         $headers[] = 'Authorization: token ' . $token;
     }
 
-    $ch = curl_init($archiveUrl);
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_SSL_VERIFYPEER => true,
-        CURLOPT_TIMEOUT        => 120,
-        CURLOPT_HTTPHEADER     => $headers,
-    ]);
-    $data = curl_exec($ch);
-    $code = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-    $err  = curl_error($ch);
-    curl_close($ch);
+    $lastCode = 0;
+    foreach ($branches as $candidate) {
+        $archiveUrl = "https://codeload.github.com/{$owner}/{$repo}/zip/refs/heads/{$candidate}";
 
-    if ($data === false) {
-        throw new RuntimeException('Ошибка загрузки: ' . $err);
-    }
-    if ($code === 404) {
-        throw new RuntimeException('Репозиторий не найден (404). Если он приватный — проверьте токен или название ветки.');
-    }
-    if ($code === 401 || $code === 403) {
-        throw new RuntimeException('Доступ запрещён (HTTP ' . $code . '). Для приватного репозитория укажите действующий GitHub-токен с правами repo.');
-    }
-    if ($code !== 200) {
-        throw new RuntimeException('GitHub вернул HTTP ' . $code . '. Проверьте ссылку и ветку (по умолчанию main).');
+        $ch = curl_init($archiveUrl);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_TIMEOUT        => 120,
+            CURLOPT_HTTPHEADER     => $headers,
+        ]);
+        $data = curl_exec($ch);
+        $code = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+        $err  = curl_error($ch);
+        curl_close($ch);
+
+        if ($data === false) {
+            throw new RuntimeException('Ошибка загрузки: ' . $err);
+        }
+
+        if ($code === 200) {
+            if (file_put_contents($dest, $data) === false) {
+                throw new RuntimeException('Не удалось сохранить архив: ' . $dest);
+            }
+            return $dest;
+        }
+
+        $lastCode = $code;
+
+        // 404 — пробуем следующую ветку из списка (main → master).
+        if ($code === 404 && count($branches) > 1) {
+            continue;
+        }
+        if ($code === 401 || $code === 403) {
+            throw new RuntimeException('Доступ запрещён (HTTP ' . $code . '). Для приватного репозитория укажите действующий GitHub-токен с правами repo.');
+        }
+        throw new RuntimeException('GitHub вернул HTTP ' . $code . '. Проверьте ссылку и ветку.');
     }
 
-    if (file_put_contents($dest, $data) === false) {
-        throw new RuntimeException('Не удалось сохранить архив: ' . $dest);
-    }
-    return $dest;
+    throw new RuntimeException(
+        'Репозиторий не найден (404). Проверьте название репозитория, ветку '
+        . 'или токен, если репозиторий приватный.'
+    );
 }
 
 /**
@@ -150,6 +170,7 @@ function remove_dir(string $dir): void
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $repoUrl = trim((string) ($_POST['repo_url'] ?? ''));
     $token   = trim((string) ($_POST['github_token'] ?? ''));
+    $branch  = trim((string) ($_POST['branch'] ?? ''));
     $rootDir = __DIR__;
 
     if ($repoUrl === '') {
@@ -164,7 +185,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $zipPath = sys_get_temp_dir() . '/netfree_' . bin2hex(random_bytes(4)) . '.zip';
-            download_repo($repoUrl, $zipPath, $token);
+            download_repo($repoUrl, $zipPath, $token, $branch);
             extract_zip($zipPath, $rootDir);
             @unlink($zipPath);
 
@@ -209,7 +230,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <form method="post">
             <label>URL репозитория GitHub *</label>
             <input type="text" name="repo_url" placeholder="https://github.com/username/netfree" required>
-            <p style="color:#6b7280;font-size:13px;">Например: <code>https://github.com/username/netfree</code>. Архив скачивается с ветки <code>main</code>.</p>
+            <p style="color:#6b7280;font-size:13px;">Например: <code>https://github.com/username/netfree</code>. Если ветка не указана — пробуются <code>main</code> и <code>master</code>.</p>
+
+            <label>Ветка (необязательно)</label>
+            <input type="text" name="branch" placeholder="main или master">
 
             <label>GitHub-токен (для приватного репозитория)</label>
             <input type="password" name="github_token" placeholder="ghp_..." autocomplete="off">
