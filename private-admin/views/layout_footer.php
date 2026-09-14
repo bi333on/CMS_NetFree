@@ -53,7 +53,7 @@
             plugins: 'lists link image code autoresize paste',
             toolbar: 'undo redo | formatselect | bold italic underline strikethrough | bullist numlist | link image | alignleft aligncenter alignright | blockquote | removeformat code',
             block_formats: 'Параграф=p; Заголовок 2=h2; Заголовок 3=h3; Заголовок 4=h4; Цитата=blockquote',
-            content_style: 'body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 15px; line-height: 1.6; } p { margin: 0 0 12px; } img { max-width: 100%; height: auto; }',
+            content_style: 'body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 15px; line-height: 1.65; color: #334155; } p { margin: 0 0 12px; } h1 { font-size: 1.9em; margin: 1.2em 0 .5em; } h2 { font-size: 1.5em; margin: 1.3em 0 .5em; padding-bottom: .3em; border-bottom: 1px solid #e2e8f0; } h3 { font-size: 1.2em; margin: 1.2em 0 .4em; } ul, ol { padding-left: 1.6em; } li { margin-bottom: .3em; } blockquote { margin: 1.2em 0; padding: 10px 16px; border-left: 4px solid #2563eb; background: #eff6ff; border-radius: 0 8px 8px 0; } img { max-width: 100%; height: auto; border-radius: 10px; } code { background: #f1f5f9; color: #be185d; padding: 2px 6px; border-radius: 4px; }',
             forced_root_block: 'p',
             paste_as_text: false,
             file_picker_types: 'image',
