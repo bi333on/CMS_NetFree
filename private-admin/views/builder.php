@@ -22,9 +22,13 @@ if (is_file($coreAssets . '/builder.js')) {
     <style><?= $builderCss ?></style>
 </head>
 <body class="nf-builder-body">
+<!-- NF_BUILDER_SHELL v<?= e(NF_VERSION) ?> -->
 <div id="nf-builder">
+    <?php if ($builderCss === '' || $builderJs === ''): ?>
+    <div style="background:#dc2626;color:#fff;padding:10px 16px;font-size:13px;">Не найдены ассеты конструктора (core-assets/builder.css|js) — каталог core-assets не загружен на сервер.</div>
+    <?php endif; ?>
     <header class="b-topbar">
-        <div class="b-brand">NetFree <strong>Builder</strong></div>
+        <div class="b-brand">NetFree <strong>Builder</strong> <span style="opacity:.55;font-size:11px;">v<?= e(NF_VERSION) ?></span></div>
         <input id="bTitle" class="b-title" type="text" value="<?= e($title) ?>" placeholder="Заголовок">
         <div class="b-devices" role="group" aria-label="Устройство">
             <button type="button" data-device="desktop" class="active">Десктоп</button>
