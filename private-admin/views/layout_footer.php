@@ -34,15 +34,28 @@
             // Если CDN недоступен — оставляем обычную textarea.
             return;
         }
+
+        // Разбивает переносы <br> внутри абзацев на отдельные абзацы,
+        // чтобы форматирование блока (например H2) применялось только к
+        // выделенной строке, а не ко всему абзацу с соседними строками.
+        function splitBrToParagraphs(html) {
+            return html
+                .replace(/(?:<br\s*\/?>\s*)+/gi, '</p><p>')
+                .replace(/<p>\s*<\/p>/gi, '')
+                .replace(/<p>\s*<\/p>/gi, '');
+        }
+
         tinymce.init({
             selector: '#' + textareaId,
             height: 480,
             menubar: false,
             branding: false,
+            promotion: false,
             plugins: 'lists link image code autoresize paste',
-            toolbar: 'undo redo | blocks | bold italic underline | bullist numlist | link image | alignleft aligncenter alignright | removeformat code',
-            block_formats: 'Параграф=p; Заголовок 2=h2; Заголовок 3=h3; Заголовок 4=h4',
-            content_style: 'body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 15px; } img { max-width: 100%; height: auto; }',
+            toolbar: 'undo redo | formatselect | bold italic underline strikethrough | bullist numlist | link image | alignleft aligncenter alignright | blockquote | removeformat code',
+            block_formats: 'Параграф=p; Заголовок 2=h2; Заголовок 3=h3; Заголовок 4=h4; Цитата=blockquote',
+            content_style: 'body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 15px; line-height: 1.6; } p { margin: 0 0 12px; } img { max-width: 100%; height: auto; }',
+            forced_root_block: 'p',
             paste_as_text: false,
             file_picker_types: 'image',
             file_picker_callback: function (cb, value, meta) {
@@ -50,7 +63,14 @@
                     cb(url, { alt: '' });
                 });
             },
+            paste_preprocess: function (plugin, args) {
+                args.content = splitBrToParagraphs(args.content);
+            },
             setup: function (editor) {
+                editor.on('init', function () {
+                    var initial = editor.getContent();
+                    editor.setContent(splitBrToParagraphs(initial));
+                });
                 editor.on('change', function () {
                     editor.save();
                 });
