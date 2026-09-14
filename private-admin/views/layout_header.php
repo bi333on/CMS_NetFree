@@ -42,13 +42,6 @@ $adminTitle = $adminTitle ?? 'NetFree — админ-панель';
         .btn.danger:hover { background:#b91c1c; }
         .row { display:flex; gap:8px; align-items:center; }
         h1 { margin-top:0; font-size:1.5rem; letter-spacing:-.02em; }
-        /* Редактор */
-        .nf-editor { border:1px solid #cbd5e1; border-radius:8px; background:#fff; overflow:hidden; }
-        .nf-editor-toolbar { display:flex; gap:4px; flex-wrap:wrap; padding:8px; border-bottom:1px solid var(--nf-border); background:#f8fafc; }
-        .nf-editor-toolbar button { background:#fff; border:1px solid #cbd5e1; border-radius:6px; padding:6px 11px; cursor:pointer; font-size:13px; }
-        .nf-editor-toolbar button:hover { background:#eff6ff; border-color:var(--nf-accent); }
-        .nf-editor-area { min-height:240px; padding:14px; outline:none; }
-        .nf-editor-area img { max-width:100%; height:auto; border-radius:8px; }
         /* Модал */
         .nf-modal-overlay { display:none; position:fixed; inset:0; background:rgba(15,23,42,.5); z-index:1000; }
         .nf-modal { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; border-radius:12px; width:720px; max-width:95%; max-height:85%; overflow:auto; padding:24px; }

@@ -19,65 +19,43 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/tinymce@6/tinymce.min.js"></script>
 <script>
 (function () {
-    var csrf = <?= json_encode(csrf_token()) ?>;
-
     function esc(s) {
         var d = document.createElement('div');
         d.textContent = s;
         return d.innerHTML;
     }
 
-    // --- Редактор ---
+    // --- Редактор TinyMCE ---
     window.nfInitEditor = function (textareaId) {
-        var ta = document.getElementById(textareaId);
-        if (!ta) return;
-
-        var wrap = document.createElement('div');
-        wrap.className = 'nf-editor';
-
-        var toolbar = document.createElement('div');
-        toolbar.className = 'nf-editor-toolbar';
-        toolbar.innerHTML =
-            '<button type="button" data-cmd="bold"><b>B</b></button>' +
-            '<button type="button" data-cmd="italic"><i>I</i></button>' +
-            '<button type="button" data-cmd="underline"><u>U</u></button>' +
-            '<button type="button" data-cmd="insertUnorderedList">• Список</button>' +
-            '<button type="button" data-cmd="formatBlock" data-val="h2">H2</button>' +
-            '<button type="button" data-cmd="formatBlock" data-val="h3">H3</button>' +
-            '<button type="button" data-cmd="createLink">Ссылка</button>' +
-            '<button type="button" data-cmd="nfMedia">🖼 Медиа</button>';
-
-        var area = document.createElement('div');
-        area.className = 'nf-editor-area';
-        area.contentEditable = 'true';
-        area.innerHTML = ta.value;
-
-        toolbar.addEventListener('click', function (e) {
-            var btn = e.target.closest('button');
-            if (!btn) return;
-            var cmd = btn.getAttribute('data-cmd');
-            if (cmd === 'nfMedia') {
+        if (typeof tinymce === 'undefined') {
+            // Если CDN недоступен — оставляем обычную textarea.
+            return;
+        }
+        tinymce.init({
+            selector: '#' + textareaId,
+            height: 480,
+            menubar: false,
+            branding: false,
+            plugins: 'lists link image code autoresize paste',
+            toolbar: 'undo redo | blocks | bold italic underline | bullist numlist | link image | alignleft aligncenter alignright | removeformat code',
+            block_formats: 'Параграф=p; Заголовок 2=h2; Заголовок 3=h3; Заголовок 4=h4',
+            content_style: 'body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 15px; } img { max-width: 100%; height: auto; }',
+            paste_as_text: false,
+            file_picker_types: 'image',
+            file_picker_callback: function (cb, value, meta) {
                 nfOpenMedia(function (url) {
-                    area.focus();
-                    document.execCommand('insertImage', false, url);
+                    cb(url, { alt: '' });
                 });
-                return;
+            },
+            setup: function (editor) {
+                editor.on('change', function () {
+                    editor.save();
+                });
             }
-            var val = btn.getAttribute('data-val') || null;
-            document.execCommand(cmd, false, val);
-            area.focus();
         });
-
-        area.addEventListener('input', function () {
-            ta.value = area.innerHTML;
-        });
-
-        ta.style.display = 'none';
-        ta.parentNode.insertBefore(wrap, ta);
-        wrap.appendChild(toolbar);
-        wrap.appendChild(area);
     };
 
     // --- Модал ---
