@@ -43,8 +43,8 @@ $adminTitle = $adminTitle ?? 'NetFree — админ-панель';
         .row { display:flex; gap:8px; align-items:center; }
         h1 { margin-top:0; font-size:1.5rem; letter-spacing:-.02em; }
         /* Модал */
-        .nf-modal-overlay { display:none; position:fixed; inset:0; background:rgba(15,23,42,.5); z-index:1000; }
-        .nf-modal { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; border-radius:12px; width:720px; max-width:95%; max-height:85%; overflow:auto; padding:24px; }
+        .nf-modal-overlay { display:none; position:fixed; inset:0; background:rgba(15,23,42,.55); z-index:2147483000; }
+        .nf-modal { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; border-radius:12px; width:720px; max-width:95%; max-height:85%; overflow:auto; padding:24px; box-shadow:0 24px 64px rgba(15,23,42,.35); }
         .nf-modal-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:14px; }
         .nf-modal-grid .item { border:1px solid var(--nf-border); border-radius:8px; padding:6px; text-align:center; cursor:pointer; }
         .nf-modal-grid .item:hover { border-color:var(--nf-accent); background:#f8fafc; }
