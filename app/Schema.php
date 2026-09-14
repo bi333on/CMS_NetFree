@@ -81,15 +81,20 @@ class Schema
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
         );
 
-        // Администратор
+        // Администратор (идемпотентно — повторный запуск не создаёт дублей)
         $hash = password_hash($adminPassword, PASSWORD_DEFAULT);
-        $stmt = $pdo->prepare('INSERT INTO users (username, password_hash, email, created_at) VALUES (?, ?, ?, ?)');
+        $stmt = $pdo->prepare(
+            'INSERT INTO users (username, password_hash, email, created_at) VALUES (?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE username = username'
+        );
         $stmt->execute([$adminUsername, $hash, '', date('Y-m-d H:i:s')]);
 
-        // Демо-страницы
+        // Демо-страницы (идемпотентно)
         $now = date('Y-m-d H:i:s');
         $insert = $pdo->prepare(
-            'INSERT INTO pages (title, slug, content, meta_desc, is_published, created_at, updated_at) VALUES (?, ?, ?, ?, 1, ?, ?)'
+            'INSERT INTO pages (title, slug, content, meta_desc, is_published, created_at, updated_at)
+             VALUES (?, ?, ?, ?, 1, ?, ?)
+             ON DUPLICATE KEY UPDATE slug = slug'
         );
 
         $insert->execute([
@@ -110,8 +115,10 @@ class Schema
             $now,
         ]);
 
-        // Базовые настройки
-        $pdo->prepare('INSERT INTO options (`key`, `value`) VALUES (?, ?)')
-            ->execute(['site_name', $siteName]);
+        // Базовые настройки (идемпотентно)
+        $pdo->prepare(
+            'INSERT INTO options (`key`, `value`) VALUES (?, ?)
+             ON DUPLICATE KEY UPDATE `value` = `value`'
+        )->execute(['site_name', $siteName]);
     }
 }

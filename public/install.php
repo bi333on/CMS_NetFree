@@ -130,6 +130,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $allRequirementsOk && !$alreadyInst
         $envCode = "<?php\n\nreturn " . var_export($env, true) . ";\n";
 
         try {
+            // Гарантируем существование папки config/ (git не хранит пустые папки).
+            $configDir = NETFREE_ROOT . '/config';
+            if (!is_dir($configDir)) {
+                if (!@mkdir($configDir, 0755, true)) {
+                    throw new RuntimeException('Не удалось создать папку config/. Проверьте права на запись в корень проекта.');
+                }
+            }
+            if (!is_writable($configDir)) {
+                throw new RuntimeException('Папка config/ недоступна для записи. Установите права на запись (например, 755 или 775) на папку config/.');
+            }
+
             // Создание схемы БД и демо-данных
             require NETFREE_ROOT . '/app/Schema.php';
             \NetFree\Schema::install($cfg, $adminUser, $adminPass, $siteName);
