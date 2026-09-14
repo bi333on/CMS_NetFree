@@ -1,25 +1,27 @@
-# NetFree — конфигурация Apache (или общий хостинг).
-# Веб-корень должен указывать на папку public/.
-# Если это невозможно и корень = корень проекта, этот .htaccess закрывает
-# доступ к важным файлам и перенаправляет запросы на public/index.php.
+# NetFree — конфигурация Apache / общий хостинг (веб-корень = корень проекта).
+#
+# Если веб-корень указывает на public/, этот файл не нужен — используйте
+# настройки сервера. Если веб-корень = корень проекта, файл:
+#   1) закрывает доступ к чувствительным каталогам/файлам;
+#   2) направляет все остальные запросы на корневой index.php (мост в public/).
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
-    # Все запросы направляем в public/index.php, кроме реально существующих файлов.
+    # 1) Закрываем доступ к ядру, конфигам и официальным плагинам.
+    RewriteRule ^(app|config|storage|plugins|admin/views)(/|$) - [F,L]
+
+    # Закрываем чувствительные файлы в корне.
+    RewriteRule ^(composer\.json|composer\.lock|Caddyfile|nginx\.conf|\.gitignore|\.env)$ - [F,L]
+
+    # 2) Все запросы (кроме реально существующих файлов) — на фронт-контроллер.
     RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule ^ index.php [L]
 </IfModule>
 
-# Закрываем прямой доступ к чувствительным каталогам и файлам.
+# Закрываем прямой доступ к файлам с чувствительными расширениями.
 <IfModule mod_authz_core.c>
-    <FilesMatch "\.(env|ini|log|sql|md)$">
+    <FilesMatch "\.(env|ini|log|sql)$">
         Require all denied
     </FilesMatch>
-</IfModule>
-
-# Если .htaccess лежит в корне проекта (не в public/), дополнительно закрываем каталоги.
-<IfModule mod_rewrite.c>
-    RewriteRule ^(app|config|storage|admin|plugins|themes)(/|$) - [F,L]
 </IfModule>
