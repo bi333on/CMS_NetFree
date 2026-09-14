@@ -20,81 +20,98 @@ $errors = [];
 $messages = [];
 
 /**
- * Скачивает zip-архив репозитория GitHub (codeload) и возвращает путь к файлу.
- * Для приватных репозиториев передаётся персональный токен (PAT).
- * Если ветка не указана — пробует main, затем master.
+ * Выполняет GET-запрос к GitHub API и возвращает ['code' => int, 'body' => string].
+ */
+function github_request(string $url, string $token): array
+{
+    $headers = [
+        'User-Agent: NetFree-Installer/1.0',
+        'Accept: application/vnd.github+json',
+        'X-GitHub-Api-Version: 2022-11-28',
+    ];
+    if ($token !== '') {
+        $headers[] = 'Authorization: Bearer ' . $token;
+    }
+
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_TIMEOUT        => 120,
+        CURLOPT_HTTPHEADER     => $headers,
+    ]);
+    $data = curl_exec($ch);
+    $code = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    $err  = curl_error($ch);
+    curl_close($ch);
+
+    if ($data === false) {
+        throw new RuntimeException('Ошибка загрузки: ' . $err);
+    }
+    return ['code' => $code, 'body' => $data];
+}
+
+/**
+ * Скачивает zip-архив репозитория GitHub (API) и возвращает путь к файлу.
+ * Для приватных репозиториев передаётся токен (PAT/fine-grained).
+ * Если ветка не указана — определяется автоматически через default_branch.
  */
 function download_repo(string $repoUrl, string $dest, string $token = '', string $branch = ''): string
 {
-    // Нормализуем ссылку в формат архива codeload.
+    // Нормализуем ссылку.
     $repoUrl = rtrim($repoUrl, '/');
     $repoUrl = preg_replace('#\.git$#', '', $repoUrl);
 
-    if (preg_match('#github\.com/([^/]+)/([^/]+?)(?:/tree/([^/]+))?$#', $repoUrl, $m)) {
-        $owner = $m[1];
-        $repo  = $m[2];
-        // Ветка может быть задана в URL (…/tree/<branch>) или в поле формы.
-        if ($branch === '' && isset($m[3]) && $m[3] !== '') {
-            $branch = $m[3];
-        }
-    } else {
+    if (!preg_match('#github\.com/([^/]+)/([^/]+?)(?:/tree/([^/]+))?$#', $repoUrl, $m)) {
         throw new RuntimeException('Не удалось распознать URL репозитория GitHub.');
     }
-
-    // Порядок попыток, если ветка не указана явно.
-    $branches = $branch !== '' ? [$branch] : ['main', 'master'];
-
-    $headers = [
-        'User-Agent: NetFree-Installer/1.0',
-    ];
-    if ($token !== '') {
-        $headers[] = 'Authorization: token ' . $token;
+    $owner = $m[1];
+    $repo  = $m[2];
+    // Ветка может быть задана в URL (…/tree/<branch>) или в поле формы.
+    if ($branch === '' && isset($m[3]) && $m[3] !== '') {
+        $branch = $m[3];
     }
 
-    $lastCode = 0;
-    foreach ($branches as $candidate) {
-        $archiveUrl = "https://codeload.github.com/{$owner}/{$repo}/zip/refs/heads/{$candidate}";
-
-        $ch = curl_init($archiveUrl);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_SSL_VERIFYPEER => true,
-            CURLOPT_TIMEOUT        => 120,
-            CURLOPT_HTTPHEADER     => $headers,
-        ]);
-        $data = curl_exec($ch);
-        $code = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-        $err  = curl_error($ch);
-        curl_close($ch);
-
-        if ($data === false) {
-            throw new RuntimeException('Ошибка загрузки: ' . $err);
+    // 1) Если ветка не задана — узнаём ветку по умолчанию у репозитория.
+    if ($branch === '') {
+        $info = github_request("https://api.github.com/repos/{$owner}/{$repo}", $token);
+        if ($info['code'] === 401 || $info['code'] === 403) {
+            throw new RuntimeException('Доступ запрещён (HTTP ' . $info['code'] . '). Проверьте GitHub-токен: у него должен быть доступ к этому репозиторию.');
         }
-
-        if ($code === 200) {
-            if (file_put_contents($dest, $data) === false) {
-                throw new RuntimeException('Не удалось сохранить архив: ' . $dest);
-            }
-            return $dest;
+        if ($info['code'] === 404) {
+            throw new RuntimeException('Репозиторий не найден (404). Проверьте владельца и название, либо что токен имеет доступ к приватному репозиторию.');
         }
-
-        $lastCode = $code;
-
-        // 404 — пробуем следующую ветку из списка (main → master).
-        if ($code === 404 && count($branches) > 1) {
-            continue;
+        if ($info['code'] !== 200) {
+            throw new RuntimeException('GitHub вернул HTTP ' . $info['code'] . ' при получении информации о репозитории.');
         }
-        if ($code === 401 || $code === 403) {
-            throw new RuntimeException('Доступ запрещён (HTTP ' . $code . '). Для приватного репозитория укажите действующий GitHub-токен с правами repo.');
+        $meta = json_decode($info['body'], true);
+        if (!is_array($meta) || empty($meta['default_branch'])) {
+            throw new RuntimeException('Не удалось определить ветку по умолчанию. Укажите ветку вручную в поле «Ветка».');
         }
-        throw new RuntimeException('GitHub вернул HTTP ' . $code . '. Проверьте ссылку и ветку.');
+        $branch = (string) $meta['default_branch'];
     }
 
-    throw new RuntimeException(
-        'Репозиторий не найден (404). Проверьте название репозитория, ветку '
-        . 'или токен, если репозиторий приватный.'
+    // 2) Скачиваем архив нужной ветки.
+    $archive = github_request(
+        "https://api.github.com/repos/{$owner}/{$repo}/zipball/" . rawurlencode($branch),
+        $token
     );
+
+    if ($archive['code'] === 401 || $archive['code'] === 403) {
+        throw new RuntimeException('Доступ запрещён (HTTP ' . $archive['code'] . '). Для приватного репозитория нужен токен с правом чтения содержимого (Contents: Read / scope repo).');
+    }
+    if ($archive['code'] === 404) {
+        throw new RuntimeException('Архив не найден (404). Проверьте название ветки «' . htmlspecialchars($branch, ENT_QUOTES) . '».');
+    }
+    if ($archive['code'] !== 200) {
+        throw new RuntimeException('GitHub вернул HTTP ' . $archive['code'] . ' при скачивании архива.');
+    }
+
+    if (file_put_contents($dest, $archive['body']) === false) {
+        throw new RuntimeException('Не удалось сохранить архив: ' . $dest);
+    }
+    return $dest;
 }
 
 /**
@@ -230,14 +247,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <form method="post">
             <label>URL репозитория GitHub *</label>
             <input type="text" name="repo_url" placeholder="https://github.com/username/netfree" required>
-            <p style="color:#6b7280;font-size:13px;">Например: <code>https://github.com/username/netfree</code>. Если ветка не указана — пробуются <code>main</code> и <code>master</code>.</p>
+            <p style="color:#6b7280;font-size:13px;">Например: <code>https://github.com/bi333on/CMS_NetFree</code>. Ветка определяется автоматически.</p>
 
             <label>Ветка (необязательно)</label>
-            <input type="text" name="branch" placeholder="main или master">
+            <input type="text" name="branch" placeholder="оставьте пустым — определится сама">
 
-            <label>GitHub-токен (для приватного репозитория)</label>
-            <input type="password" name="github_token" placeholder="ghp_..." autocomplete="off">
-            <p style="color:#6b7280;font-size:13px;">Оставьте пустым, если репозиторий публичный. Для приватного нужен Personal Access Token с правами <code>repo</code>. Токен нигде не сохраняется.</p>
+            <label>GitHub-токен (обязателен для приватного репозитория) *</label>
+            <input type="password" name="github_token" placeholder="ghp_... или github_pat_..." autocomplete="off">
+            <p style="color:#6b7280;font-size:13px;">Токен с правом чтения содержимого: classic <code>repo</code> или fine-grained <code>Contents: Read-only</code>. Токен нигде не сохраняется.</p>
 
             <button type="submit" class="btn">Скачать и распаковать</button>
         </form>
