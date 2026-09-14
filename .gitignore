@@ -1,6 +1,8 @@
 /config/env.php
 /storage/*
 !/storage/.gitkeep
+!/storage/plugins/
+!/storage/plugins/**
 /public/uploads/*
 !/public/uploads/.gitkeep
 /vendor/

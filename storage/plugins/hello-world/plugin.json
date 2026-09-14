@@ -1,0 +1,8 @@
+{
+    "name": "hello-world",
+    "display_name": "Hello World (сторонний)",
+    "description": "Пример открытого стороннего плагина: добавляет подпись в подвал сайта.",
+    "version": "1.0.0",
+    "author": "Third-party",
+    "enabled": true
+}
