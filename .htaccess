@@ -9,7 +9,7 @@
     RewriteEngine On
 
     # 1) Закрываем доступ к ядру, конфигам и официальным плагинам.
-    RewriteRule ^(app|config|storage|plugins|admin/views)(/|$) - [F,L]
+    RewriteRule ^(app|config|storage|plugins|private-admin)(/|$) - [F,L]
 
     # Закрываем чувствительные файлы в корне.
     RewriteRule ^(composer\.json|composer\.lock|Caddyfile|nginx\.conf|\.gitignore|\.env)$ - [F,L]

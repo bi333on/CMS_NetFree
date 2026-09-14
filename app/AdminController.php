@@ -122,7 +122,7 @@ class AdminController
 
     protected function render(string $view, array $data = []): string
     {
-        $adminViews = __DIR__ . '/../admin/views';
+        $adminViews = __DIR__ . '/../private-admin/views';
         extract($data, EXTR_SKIP);
         ob_start();
         include $adminViews . '/' . $view . '.php';
