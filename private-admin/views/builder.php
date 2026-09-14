@@ -24,9 +24,9 @@ $adminTitle = 'Конструктор — NetFree';
             <button type="button" id="bAddSection" class="b-btn">+ Секция</button>
             <button type="button" id="bUndo" class="b-btn" title="Отменить">↶</button>
             <button type="button" id="bRedo" class="b-btn" title="Повторить">↷</button>
-            <a class="b-btn b-btn-ghost" href="<?= e(url($canvasUrl)) ?>" target="_blank" rel="noopener">Просмотр</a>
-            <button type="button" id="bSave" class="b-btn b-btn-primary">Сохранить</button>
             <a class="b-btn b-btn-ghost" href="<?= e(url($backUrl)) ?>">Назад</a>
+            <button type="button" id="bPreview" class="b-btn b-btn-ghost">Просмотр</button>
+            <button type="button" id="bSave" class="b-btn b-btn-primary">Сохранить</button>
         </div>
     </header>
 
@@ -35,9 +35,11 @@ $adminTitle = 'Конструктор — NetFree';
             <div class="b-tabs">
                 <button type="button" data-ptab="palette" class="active">Виджеты</button>
                 <button type="button" data-ptab="structure">Структура</button>
+                <button type="button" data-ptab="history">История</button>
             </div>
             <div id="bPalette" class="b-panel"></div>
             <div id="bStructure" class="b-panel" hidden></div>
+            <div id="bHistory" class="b-panel" hidden></div>
         </aside>
 
         <div class="b-canvas-wrap" id="bCanvasWrap">
@@ -64,7 +66,12 @@ window.NF_BUILDER_CONFIG = {
     csrf: <?= json_encode(csrf_token()) ?>,
     blocksUrl: <?= json_encode(url('admin/ajax/builder/blocks')) ?>,
     renderUrl: <?= json_encode(url('admin/ajax/builder/render')) ?>,
-    saveUrl: <?= json_encode(url('admin/ajax/builder/save')) ?>
+    saveUrl: <?= json_encode(url('admin/ajax/builder/save')) ?>,
+    autosaveUrl: <?= json_encode(url('admin/ajax/builder/autosave')) ?>,
+    revisionsUrl: <?= json_encode(url('admin/ajax/builder/revisions')) ?>,
+    restoreUrl: <?= json_encode(url('admin/ajax/builder/revisions/restore')) ?>,
+    previewTokenUrl: <?= json_encode(url('admin/ajax/builder/preview-token')) ?>,
+    autosave: <?= $autosave ?>
 };
 </script>
 <script src="<?= e(url('nf-assets/builder.js?v=' . NF_VERSION)) ?>"></script>

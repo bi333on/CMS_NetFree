@@ -63,4 +63,15 @@ class Builder
             self::$headCss = '';
         }
     }
+
+    /**
+     * Кладёт готовый CSS в очередь <head> (используется предпросмотром ревизий).
+     */
+    public static function enqueueRawCss(string $css): void
+    {
+        $css = trim($css);
+        if ($css !== '') {
+            self::$headCss .= "\n" . $css;
+        }
+    }
 }

@@ -7,6 +7,8 @@ namespace NetFree\Builder;
 use NetFree\Application;
 use NetFree\Content\PageRepository;
 use NetFree\Content\PostRepository;
+use NetFree\Content\RevisionRepository;
+use NetFree\Database;
 use NetFree\Response;
 
 /**
@@ -27,6 +29,23 @@ class BuilderController
         // Текущий документ: content_blocks, либо автоконверсия из классического content.
         $raw = (string) ($entity['content_blocks'] ?? '');
         if ($raw === '' || $raw === 'null') {
+            // Перед первой конвертацией пишем снимок классического контента (обратимость).
+            if (($entity['editor_mode'] ?? 'classic') !== 'builder'
+                && (string) ($entity['content'] ?? '') !== ''
+                && !RevisionRepository::byEntity($type, $id, 1)
+            ) {
+                $user = current_user();
+                RevisionRepository::create([
+                    'entity_type'    => $type,
+                    'entity_id'      => $id,
+                    'user_id'        => isset($user['id']) ? (int) $user['id'] : null,
+                    'title'          => (string) ($entity['title'] ?? ''),
+                    'content'        => (string) ($entity['content'] ?? ''),
+                    'content_blocks' => null,
+                    'content_css'    => null,
+                    'is_autosave'    => 0,
+                ]);
+            }
             $doc = HtmlConverter::convert((string) ($entity['content'] ?? ''));
         } else {
             $doc = Document::parse($raw);
@@ -35,6 +54,11 @@ class BuilderController
         // Экранируем "</" как "<\/", чтобы JSON нельзя было разорвать через "</script>".
         $documentJson = str_replace('</', '<\\/', json_encode($doc, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
+        $autosave = RevisionRepository::latestAutosave($type, $id);
+        $autosaveInfo = $autosave
+            ? ['id' => (int) $autosave['id'], 'created_at' => $autosave['created_at']]
+            : null;
+
         $data = [
             'type'      => $type,
             'id'        => $id,
@@ -42,6 +66,7 @@ class BuilderController
             'document'  => $documentJson,
             'canvasUrl' => '/admin/builder/canvas/' . $type . '/' . $id,
             'backUrl'   => $type === 'page' ? '/admin/pages' : '/admin/posts',
+            'autosave'  => json_encode($autosaveInfo, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
         ];
 
         $view = __DIR__ . '/../../private-admin/views/builder.php';
@@ -62,6 +87,60 @@ class BuilderController
         $entity = $this->entity($type, $id);
         if (!$entity) {
             return (new Response())->setStatus(404)->setBody('Not found');
+        }
+
+        $html = $type === 'page'
+            ? $app->theme->render('page', ['page' => $entity])
+            : $app->theme->render('blog_post', ['post' => $entity]);
+
+        return (new Response())->setBody($html);
+    }
+
+    /**
+     * Публичный предпросмотр черновика по одноразовому токену с TTL.
+     * Рендерит конкретную ревизию (или последний автосейв) без авторизации.
+     */
+    public function preview(Application $app, string $type, int $id): Response
+    {
+        if (!in_array($type, ['page', 'post'], true)) {
+            return (new Response())->setStatus(404)->setBody('Not found');
+        }
+
+        $token = (string) ($app->request->query['token'] ?? '');
+        $row = $token !== ''
+            ? Database::first('SELECT * FROM preview_tokens WHERE token = ?', [$token])
+            : null;
+
+        if (!$row || strtotime((string) $row['expires_at']) < time()) {
+            return (new Response())->setStatus(404)->setBody('Not found');
+        }
+        if ((string) $row['entity_type'] !== $type || (int) $row['entity_id'] !== $id) {
+            return (new Response())->setStatus(404)->setBody('Not found');
+        }
+
+        // Исходная запись без хуков (чтобы Builder::prepareEntity не перерисовывал).
+        $entity = $type === 'page'
+            ? Database::first('SELECT * FROM pages WHERE id = ?', [$id])
+            : Database::first('SELECT * FROM posts WHERE id = ?', [$id]);
+        if (!$entity) {
+            return (new Response())->setStatus(404)->setBody('Not found');
+        }
+
+        $revision = null;
+        if (!empty($row['revision_id'])) {
+            $revision = RevisionRepository::byId((int) $row['revision_id']);
+        } else {
+            $revision = RevisionRepository::latestAutosave($type, $id);
+        }
+
+        if ($revision) {
+            $entity['title']          = $revision['title'] !== '' ? (string) $revision['title'] : (string) ($entity['title'] ?? '');
+            $entity['content']        = (string) $revision['content'];
+            $entity['content_blocks'] = $revision['content_blocks'];
+            $entity['content_css']    = (string) ($revision['content_css'] ?? '');
+            Builder::enqueueRawCss((string) ($revision['content_css'] ?? ''));
+        } else {
+            Builder::enqueueRawCss((string) ($entity['content_css'] ?? ''));
         }
 
         $html = $type === 'page'

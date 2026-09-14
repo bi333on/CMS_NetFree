@@ -127,6 +127,11 @@ class Application
             return $this->renderCategory($slug);
         });
 
+        // Публичный предпросмотр черновика по одноразовому токену.
+        $this->router->get('/preview/{type}/{id}', function (string $type, string $id) {
+            return (new \NetFree\Builder\BuilderController())->preview($this, $type, (int) $id);
+        });
+
         $this->router->get('/{slug}', function (string $slug) {
             return $this->renderPage($slug);
         });
@@ -335,6 +340,22 @@ class Application
 
         $this->router->post('/admin/ajax/builder/save', function () use ($builderAjax) {
             return $builderAjax->save($this);
+        });
+
+        $this->router->get('/admin/ajax/builder/revisions', function () use ($builderAjax) {
+            return $builderAjax->revisions($this);
+        });
+
+        $this->router->post('/admin/ajax/builder/revisions/restore', function () use ($builderAjax) {
+            return $builderAjax->restore($this);
+        });
+
+        $this->router->post('/admin/ajax/builder/autosave', function () use ($builderAjax) {
+            return $builderAjax->autosave($this);
+        });
+
+        $this->router->post('/admin/ajax/builder/preview-token', function () use ($builderAjax) {
+            return $builderAjax->previewToken($this);
         });
     }
 

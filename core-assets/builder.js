@@ -19,6 +19,7 @@
         breakpoints: { tablet: '1024px', mobile: '767px' },
         history: [],
         historyIndex: -1,
+        dirty: false,
         iframe: null,
         overlayEl: null
     };
@@ -218,6 +219,7 @@
         state.history.push(snap);
         if (state.history.length > 60) state.history.shift();
         state.historyIndex = state.history.length - 1;
+        state.dirty = true;
         updateUndoButtons();
     }
     function updateUndoButtons() {
@@ -912,6 +914,7 @@
         }).then(function (j) {
             btn.disabled = false;
             if (j && j.error) { toast(j.error, true); return; }
+            state.dirty = false;
             toast('Сохранено');
         }).catch(function (e) {
             btn.disabled = false;
@@ -919,19 +922,81 @@
         });
     }
 
+    // ---------------------------------------------------------------- history + preview
+    function renderHistory() {
+        var root = $('#bHistory');
+        root.innerHTML = '<div class="b-hint">Загрузка…</div>';
+        api(CFG.revisionsUrl + '?type=' + encodeURIComponent(state.type) + '&id=' + state.id).then(function (j) {
+            var revs = (j && j.revisions) || [];
+            root.innerHTML = '';
+            if (!revs.length) {
+                root.innerHTML = '<div class="b-hint">Ревизий пока нет</div>';
+                return;
+            }
+            var ul = document.createElement('ul');
+            ul.className = 'b-tree';
+            revs.forEach(function (r) {
+                var li = document.createElement('li');
+                var div = document.createElement('div');
+                div.className = 'b-node';
+                var span = document.createElement('span');
+                span.textContent = (r.is_autosave ? 'Автосохранение' : 'Сохранение') + ' · ' + (r.created_at || '') + (r.has_blocks ? '' : ' · классика');
+                div.appendChild(span);
+                var acts = document.createElement('span');
+                acts.className = 'b-node-actions';
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.textContent = '↩';
+                btn.title = 'Восстановить';
+                btn.addEventListener('click', function () { restoreRevision(r.id); });
+                acts.appendChild(btn);
+                div.appendChild(acts);
+                li.appendChild(div);
+                ul.appendChild(li);
+            });
+            root.appendChild(ul);
+        });
+    }
+    function restoreRevision(revId) {
+        if (!confirm('Восстановить эту ревизию? Текущее состояние будет сохранено как новая ревизия.')) return;
+        api(CFG.restoreUrl, { type: state.type, id: state.id, revision_id: revId }).then(function (j) {
+            if (j && j.error) { toast(j.error, true); return; }
+            location.reload();
+        }).catch(function (e) { toast('Ошибка: ' + e.message, true); });
+    }
+    function preview() {
+        // Сначала автосохраняем текущее состояние, чтобы предпросмотр показал последние правки.
+        var pre = state.dirty
+            ? api(CFG.autosaveUrl, {
+                type: state.type,
+                id: state.id,
+                title: $('#bTitle').value.trim(),
+                document: state.document
+            }).then(function () { state.dirty = false; })
+            : Promise.resolve();
+        pre.then(function () {
+            return api(CFG.previewTokenUrl, { type: state.type, id: state.id });
+        }).then(function (j) {
+            if (j && j.error) { toast(j.error, true); return; }
+            if (j && j.url) window.open(j.url, '_blank');
+        }).catch(function (e) { toast('Ошибка: ' + e.message, true); });
+    }
+
     // ---------------------------------------------------------------- init
     function init() {
         state.iframe = $('#bCanvas');
         state.overlayEl = $('#bOverlay');
 
-        // Табы палитры/структуры.
+        // Табы палитры/структуры/истории.
         $$('#nf-builder [data-ptab]').forEach(function (b) {
             b.addEventListener('click', function () {
                 state.ptab = b.dataset.ptab;
                 $$('#nf-builder [data-ptab]').forEach(function (x) { x.classList.toggle('active', x === b); });
                 $('#bPalette').hidden = state.ptab !== 'palette';
                 $('#bStructure').hidden = state.ptab !== 'structure';
+                $('#bHistory').hidden = state.ptab !== 'history';
                 if (state.ptab === 'structure') renderStructure();
+                if (state.ptab === 'history') renderHistory();
             });
         });
         // Табы инспектора.
@@ -954,6 +1019,7 @@
         // Кнопки.
         $('#bAddSection').addEventListener('click', addSection);
         $('#bSave').addEventListener('click', save);
+        $('#bPreview').addEventListener('click', preview);
         $('#bUndo').addEventListener('click', function () {
             if (state.historyIndex > 0) { state.historyIndex--; restore(state.history[state.historyIndex]); }
         });
@@ -994,6 +1060,35 @@
             renderPalette();
             renderStructure();
         });
+
+        // Автосохранение раз в 30 секунд при наличии несохранённых изменений.
+        setInterval(function () {
+            if (state.dirty) {
+                state.dirty = false;
+                api(CFG.autosaveUrl, {
+                    type: state.type,
+                    id: state.id,
+                    title: $('#bTitle').value.trim(),
+                    document: state.document
+                }).catch(function () { state.dirty = true; });
+            }
+        }, 30000);
+
+        // Баннер «найдено автосохранение».
+        if (CFG.autosave) {
+            var banner = document.createElement('div');
+            banner.className = 'b-autosave-banner';
+            banner.textContent = 'Найдено автосохранение от ' + (CFG.autosave.created_at || '') + ' ';
+            var rBtn = document.createElement('button');
+            rBtn.type = 'button'; rBtn.className = 'b-btn b-btn-primary'; rBtn.textContent = 'Восстановить';
+            rBtn.addEventListener('click', function () { restoreRevision(CFG.autosave.id); });
+            var dBtn = document.createElement('button');
+            dBtn.type = 'button'; dBtn.className = 'b-btn'; dBtn.textContent = 'Игнорировать';
+            dBtn.addEventListener('click', function () { banner.remove(); });
+            banner.appendChild(rBtn);
+            banner.appendChild(dBtn);
+            document.body.appendChild(banner);
+        }
 
         renderInspector();
         pushHistory();

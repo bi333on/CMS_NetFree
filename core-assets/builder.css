@@ -263,3 +263,22 @@ html, body.nf-builder-body {
 }
 .b-toast.show { opacity: 1; }
 .b-toast.error { background: var(--b-danger); }
+
+/* Баннер «найдено автосохранение» */
+.b-autosave-banner {
+    position: fixed;
+    top: 64px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #fef3c7;
+    border: 1px solid #f59e0b;
+    color: #92400e;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    z-index: 900;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    white-space: nowrap;
+}
