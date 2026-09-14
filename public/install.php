@@ -78,7 +78,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $allRequirementsOk && !$alreadyInst
             ]);
             $pdoOk = true;
         } catch (Throwable $e) {
-            $errors[] = 'Не удалось подключиться к базе данных: ' . $e->getMessage();
+            $msg = $e->getMessage();
+
+            if (str_contains($msg, '1045')) {
+                $errors[] = 'Ошибка доступа к MySQL (код 1045): неверный логин или пароль пользователя БД, либо у пользователя нет прав подключаться с этого хоста.';
+                $errors[] = 'Проверьте: 1) пароль пользователя «' . htmlspecialchars($dbUser, ENT_QUOTES) . '»; 2) что пользователю разрешён доступ с хоста «' . htmlspecialchars($dbHost, ENT_QUOTES) . '» (на многих хостингах «localhost» и «127.0.0.1» — разные правила); 3) что пользователь привязан к базе «' . htmlspecialchars($dbName, ENT_QUOTES) . '».';
+            } elseif (str_contains($msg, '1049')) {
+                $errors[] = 'База данных «' . htmlspecialchars($dbName, ENT_QUOTES) . '» не найдена (код 1049). Создайте базу в панели хостинга и укажите её точное имя.';
+            } elseif (str_contains($msg, '2002') || str_contains($msg, '2005')) {
+                $errors[] = 'Не удалось подключиться к серверу MySQL «' . htmlspecialchars($dbHost, ENT_QUOTES) . ':' . (int) $dbPort . '». Проверьте хост и порт (на хостинге хост часто «localhost», а не IP).';
+            } else {
+                $errors[] = 'Не удалось подключиться к базе данных: ' . $msg;
+            }
         }
     }
 
