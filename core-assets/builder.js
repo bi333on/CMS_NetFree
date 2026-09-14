@@ -20,6 +20,8 @@
         history: [],
         historyIndex: -1,
         dirty: false,
+        media: { q: '', page: 1, perPage: 24, total: 0 },
+        pickTarget: null,
         iframe: null,
         overlayEl: null
     };
@@ -46,6 +48,14 @@
         t.className = 'b-toast show' + (isError ? ' error' : '');
         clearTimeout(t._timer);
         t._timer = setTimeout(function () { t.className = 'b-toast'; }, 2200);
+    }
+    function debounce(fn, wait) {
+        var t;
+        return function () {
+            var args = arguments, self = this;
+            clearTimeout(t);
+            t = setTimeout(function () { fn.apply(self, args); }, wait);
+        };
     }
 
     // ---------------------------------------------------------------- node helpers
@@ -797,6 +807,18 @@
                 }
                 root.appendChild(field(f.label || key, control, null));
             });
+            if (node.type === 'image') {
+                var pickBtn = document.createElement('button');
+                pickBtn.type = 'button';
+                pickBtn.className = 'b-btn';
+                pickBtn.textContent = 'Выбрать из библиотеки';
+                pickBtn.style.cssText = 'width:100%;margin-top:4px;';
+                pickBtn.addEventListener('click', function () {
+                    state.pickTarget = node.id;
+                    switchPanel('media');
+                });
+                root.appendChild(pickBtn);
+            }
         } else {
             root.innerHTML = '<div class="b-hint">' + (sel.kind === 'section' ? 'Секция' : 'Колонка') + '. Настройки — во вкладке «Стиль».</div>';
         }
@@ -982,22 +1004,137 @@
         }).catch(function (e) { toast('Ошибка: ' + e.message, true); });
     }
 
+    // ---------------------------------------------------------------- media
+    function switchPanel(tab) {
+        state.ptab = tab;
+        $$('#nf-builder [data-ptab]').forEach(function (x) { x.classList.toggle('active', x.dataset.ptab === tab); });
+        $('#bPalette').hidden = tab !== 'palette';
+        $('#bStructure').hidden = tab !== 'structure';
+        $('#bMedia').hidden = tab !== 'media';
+        $('#bHistory').hidden = tab !== 'history';
+        if (tab === 'structure') renderStructure();
+        if (tab === 'media') renderMediaPanel();
+        if (tab === 'history') renderHistory();
+    }
+    function renderMediaPanel() {
+        var root = $('#bMedia');
+        if (!root.dataset.ready) {
+            root.dataset.ready = '1';
+            root.innerHTML =
+                '<input type="text" id="bMediaSearch" class="b-media-search" placeholder="Поиск...">' +
+                '<div id="bMediaGrid" class="b-media-grid"></div>' +
+                '<div class="b-media-pager">' +
+                '<button type="button" id="bMediaPrev" class="b-btn">←</button>' +
+                '<span id="bMediaInfo"></span>' +
+                '<button type="button" id="bMediaNext" class="b-btn">→</button>' +
+                '</div>';
+            $('#bMediaSearch').addEventListener('input', debounce(function () {
+                state.media.q = this.value;
+                state.media.page = 1;
+                loadMedia();
+            }, 300));
+            $('#bMediaPrev').addEventListener('click', function () { if (state.media.page > 1) { state.media.page--; loadMedia(); } });
+            $('#bMediaNext').addEventListener('click', function () { state.media.page++; loadMedia(); });
+        }
+        loadMedia();
+    }
+    function loadMedia() {
+        var url = CFG.mediaUrl + '?q=' + encodeURIComponent(state.media.q) + '&page=' + state.media.page + '&per_page=' + state.media.perPage;
+        api(url).then(function (j) {
+            var grid = $('#bMediaGrid');
+            if (!grid) return;
+            grid.innerHTML = '';
+            (j.items || []).forEach(function (item) {
+                var div = document.createElement('div');
+                div.className = 'b-media-item';
+                if ((item.mime || '').indexOf('image/') === 0) {
+                    div.innerHTML = '<img src="' + esc(item.url) + '" alt="' + esc(item.alt || '') + '">';
+                } else {
+                    div.innerHTML = '<div class="b-media-file">📄</div>';
+                }
+                if (item.width && item.height) {
+                    div.innerHTML += '<div class="b-media-dims">' + item.width + '×' + item.height + '</div>';
+                }
+                div.addEventListener('click', function () { pickMedia(item); });
+                grid.appendChild(div);
+            });
+            var totalPages = Math.max(1, Math.ceil((j.total || 0) / state.media.perPage));
+            var info = $('#bMediaInfo'), prev = $('#bMediaPrev'), next = $('#bMediaNext');
+            if (info) info.textContent = 'Стр. ' + j.page + ' / ' + totalPages;
+            if (prev) prev.disabled = j.page <= 1;
+            if (next) next.disabled = j.page >= totalPages;
+        });
+    }
+    function pickMedia(item) {
+        if (state.pickTarget) {
+            var found = findNode(state.pickTarget);
+            state.pickTarget = null;
+            if (found && found.kind === 'widget' && found.node.type === 'image') {
+                found.node.data.src = item.url;
+                found.node.data.alt = item.alt || '';
+                if (item.width) found.node.data.width = item.width;
+                if (item.height) found.node.data.height = item.height;
+                pushHistory();
+                rerenderSection(found.section).then(function () { renderInspector(); });
+            }
+            return;
+        }
+        var w = newNode('image');
+        w.data.src = item.url;
+        w.data.alt = item.alt || '';
+        if (item.width) w.data.width = item.width;
+        if (item.height) w.data.height = item.height;
+        insertWidgetIntoSelection(w);
+    }
+    function insertWidgetIntoSelection(w) {
+        var target = null;
+        if (state.selectedId) {
+            var sel = findNode(state.selectedId);
+            if (sel) {
+                if (sel.kind === 'column') target = sel.node;
+                else if (sel.kind === 'widget') target = sel.column;
+                else if (sel.kind === 'section') target = (sel.node.columns || [])[0] || null;
+            }
+        }
+        if (!target) {
+            var s = newSection();
+            state.document.sections.push(s);
+            target = s.columns[0];
+            insertSection(s).then(function () { appendWidget(target, w); });
+            return;
+        }
+        appendWidget(target, w);
+    }
+    function appendWidget(target, w) {
+        target.widgets = target.widgets || [];
+        target.widgets.push(w);
+        pushHistory();
+        rerenderSection(findNode(target.id).section).then(function () { select(w.id); });
+    }
+    function uploadImage(file) {
+        var fd = new FormData();
+        fd.append('_csrf', CFG.csrf);
+        fd.append('file', file);
+        return fetch(CFG.mediaUploadUrl, { method: 'POST', body: fd }).then(function (r) { return r.json(); });
+    }
+    function insertUploaded(item) {
+        if (!item || !item.url) return;
+        var w = newNode('image');
+        w.data.src = item.url;
+        w.data.alt = '';
+        if (item.width) w.data.width = item.width;
+        if (item.height) w.data.height = item.height;
+        insertWidgetIntoSelection(w);
+    }
+
     // ---------------------------------------------------------------- init
     function init() {
         state.iframe = $('#bCanvas');
         state.overlayEl = $('#bOverlay');
 
-        // Табы палитры/структуры/истории.
+        // Табы палитры/структуры/медиа/истории.
         $$('#nf-builder [data-ptab]').forEach(function (b) {
-            b.addEventListener('click', function () {
-                state.ptab = b.dataset.ptab;
-                $$('#nf-builder [data-ptab]').forEach(function (x) { x.classList.toggle('active', x === b); });
-                $('#bPalette').hidden = state.ptab !== 'palette';
-                $('#bStructure').hidden = state.ptab !== 'structure';
-                $('#bHistory').hidden = state.ptab !== 'history';
-                if (state.ptab === 'structure') renderStructure();
-                if (state.ptab === 'history') renderHistory();
-            });
+            b.addEventListener('click', function () { switchPanel(b.dataset.ptab); });
         });
         // Табы инспектора.
         $$('#nf-builder [data-itab]').forEach(function (b) {
@@ -1089,6 +1226,38 @@
             banner.appendChild(dBtn);
             document.body.appendChild(banner);
         }
+
+        // Вставка изображения из буфера обмена.
+        window.addEventListener('paste', function (e) {
+            var items = (e.clipboardData && e.clipboardData.items) || [];
+            for (var i = 0; i < items.length; i++) {
+                if (items[i].kind === 'file' && items[i].type.indexOf('image/') === 0) {
+                    var file = items[i].getAsFile();
+                    uploadImage(file).then(function (j) {
+                        if (j && j.item) insertUploaded(j.item);
+                        else if (j && j.error) toast(j.error, true);
+                    });
+                    e.preventDefault();
+                    break;
+                }
+            }
+        });
+
+        // Drag & drop файла изображения в холст.
+        var wrap = $('#bCanvasWrap');
+        wrap.addEventListener('dragover', function (e) { e.preventDefault(); });
+        wrap.addEventListener('drop', function (e) {
+            e.preventDefault();
+            var files = (e.dataTransfer && e.dataTransfer.files) || [];
+            for (var i = 0; i < files.length; i++) {
+                if (files[i].type.indexOf('image/') === 0) {
+                    uploadImage(files[i]).then(function (j) {
+                        if (j && j.item) insertUploaded(j.item);
+                        else if (j && j.error) toast(j.error, true);
+                    });
+                }
+            }
+        });
 
         renderInspector();
         pushHistory();

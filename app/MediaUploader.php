@@ -95,9 +95,12 @@ class MediaUploader
         ]);
 
         return [
-            'id'   => $id,
-            'url'  => '/uploads/' . $filename,
-            'name' => $original,
+            'id'     => $id,
+            'url'    => '/uploads/' . $filename,
+            'name'   => $original,
+            'mime'   => $detected,
+            'width'  => $width,
+            'height' => $height,
         ];
     }
 }

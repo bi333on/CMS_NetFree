@@ -127,6 +127,8 @@ class BlockRegistry
                 'alt'     => ['type' => 'text', 'label' => 'Alt-текст', 'default' => ''],
                 'caption' => ['type' => 'text', 'label' => 'Подпись', 'default' => ''],
                 'href'    => ['type' => 'url', 'label' => 'Ссылка', 'default' => ''],
+                'width'   => ['type' => 'number', 'label' => 'Ширина (px)', 'default' => ''],
+                'height'  => ['type' => 'number', 'label' => 'Высота (px)', 'default' => ''],
             ],
             'design'   => ['spacing', 'align'],
             'render'   => function (array $d, array $node): string {
@@ -134,7 +136,14 @@ class BlockRegistry
                 if ($src === '') {
                     return '';
                 }
-                $img = '<img src="' . e($src) . '" alt="' . e((string) ($d['alt'] ?? '')) . '">';
+                $attrs = 'src="' . e($src) . '" alt="' . e((string) ($d['alt'] ?? '')) . '"';
+                if ((int) ($d['width'] ?? 0) > 0) {
+                    $attrs .= ' width="' . (int) $d['width'] . '"';
+                }
+                if ((int) ($d['height'] ?? 0) > 0) {
+                    $attrs .= ' height="' . (int) $d['height'] . '"';
+                }
+                $img = '<img ' . $attrs . '>';
                 $caption = trim((string) ($d['caption'] ?? ''));
                 if ($caption !== '') {
                     $img .= '<figcaption>' . e($caption) . '</figcaption>';

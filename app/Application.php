@@ -312,6 +312,10 @@ class Application
             return $mediaAjax->upload($this);
         });
 
+        $this->router->post('/admin/ajax/media/update', function () use ($mediaAjax) {
+            return $mediaAjax->update($this);
+        });
+
         // Визуальный конструктор.
         $builderAjax = new \NetFree\Builder\BuilderAjax();
         $builderCtrl = new \NetFree\Builder\BuilderController();

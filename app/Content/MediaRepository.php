@@ -56,6 +56,11 @@ class MediaRepository
         return Database::insert('media', $data);
     }
 
+    public static function update(int $id, array $data): int
+    {
+        return Database::update('media', $data, ['id' => $id]);
+    }
+
     public static function delete(int $id): int
     {
         return Database::delete('media', ['id' => $id]);

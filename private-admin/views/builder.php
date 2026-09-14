@@ -35,10 +35,12 @@ $adminTitle = 'Конструктор — NetFree';
             <div class="b-tabs">
                 <button type="button" data-ptab="palette" class="active">Виджеты</button>
                 <button type="button" data-ptab="structure">Структура</button>
+                <button type="button" data-ptab="media">Медиа</button>
                 <button type="button" data-ptab="history">История</button>
             </div>
             <div id="bPalette" class="b-panel"></div>
             <div id="bStructure" class="b-panel" hidden></div>
+            <div id="bMedia" class="b-panel" hidden></div>
             <div id="bHistory" class="b-panel" hidden></div>
         </aside>
 
@@ -71,6 +73,8 @@ window.NF_BUILDER_CONFIG = {
     revisionsUrl: <?= json_encode(url('admin/ajax/builder/revisions')) ?>,
     restoreUrl: <?= json_encode(url('admin/ajax/builder/revisions/restore')) ?>,
     previewTokenUrl: <?= json_encode(url('admin/ajax/builder/preview-token')) ?>,
+    mediaUrl: <?= json_encode(url('admin/ajax/media')) ?>,
+    mediaUploadUrl: <?= json_encode(url('admin/ajax/media/upload')) ?>,
     autosave: <?= $autosave ?>
 };
 </script>

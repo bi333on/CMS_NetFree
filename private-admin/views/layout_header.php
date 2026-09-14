@@ -62,6 +62,7 @@ $adminTitle = $adminTitle ?? 'NetFree — админ-панель';
         .nf-modal-grid .item:hover { border-color:var(--nf-accent); background:#f8fafc; }
         .nf-modal-grid img { max-width:100%; height:70px; object-fit:cover; display:block; margin:0 auto; border-radius:4px; }
         .nf-modal-close { float:right; cursor:pointer; font-size:22px; color:var(--nf-muted); }
+        .nf-media-pager { display:flex; align-items:center; gap:10px; justify-content:center; margin-top:14px; }
     </style>
 </head>
 <body>

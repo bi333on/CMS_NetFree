@@ -16,7 +16,13 @@
                 <button type="submit" class="btn">Загрузить</button>
             </div>
         </form>
+        <input type="text" id="nfMediaSearch" placeholder="Поиск по имени файла..." style="margin-bottom:10px;">
         <div class="nf-modal-grid" id="nfMediaGrid"></div>
+        <div class="nf-media-pager">
+            <button type="button" class="btn secondary" id="nfMediaPrev">←</button>
+            <span id="nfMediaInfo" style="font-size:13px;color:#64748b;"></span>
+            <button type="button" class="btn secondary" id="nfMediaNext">→</button>
+        </div>
     </div>
 </div>
 
@@ -140,8 +146,12 @@
         }
     };
 
+    var nfMediaState = { q: '', page: 1, perPage: 40 };
+
     function nfLoadMedia() {
-        fetch('<?= e(url('admin/ajax/media')) ?>')
+        var url = '<?= e(url('admin/ajax/media')) ?>?q=' + encodeURIComponent(nfMediaState.q)
+            + '&page=' + nfMediaState.page + '&per_page=' + nfMediaState.perPage;
+        fetch(url)
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 var grid = document.getElementById('nfMediaGrid');
@@ -150,15 +160,21 @@
                     var el = document.createElement('div');
                     el.className = 'item';
                     el.innerHTML = item.mime.indexOf('image/') === 0
-                        ? '<img src="' + esc(item.url) + '" alt="">'
+                        ? '<img src="' + esc(item.url) + '" alt="' + esc(item.alt || '') + '">'
                         : '<div style="height:70px;display:flex;align-items:center;justify-content:center;">📄</div>';
-                    el.innerHTML += '<div style="font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(item.name) + '</div>';
+                    var dims = (item.width && item.height) ? item.width + '×' + item.height : '';
+                    el.innerHTML += '<div style="font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(item.name) + '</div>'
+                        + (dims ? '<div style="font-size:10px;color:#94a3b8;">' + dims + '</div>' : '');
                     el.onclick = function () {
                         if (currentCallback) currentCallback(item.url);
                         nfCloseMedia();
                     };
                     grid.appendChild(el);
                 });
+                var totalPages = Math.max(1, Math.ceil((data.total || 0) / nfMediaState.perPage));
+                document.getElementById('nfMediaInfo').textContent = 'Стр. ' + data.page + ' / ' + totalPages;
+                document.getElementById('nfMediaPrev').disabled = data.page <= 1;
+                document.getElementById('nfMediaNext').disabled = data.page >= totalPages;
             });
     }
 
@@ -181,6 +197,24 @@
     document.getElementById('nfMediaModal').addEventListener('click', function (e) {
         if (e.target === this) nfCloseMedia();
     });
+
+    // Поиск и пагинация в модале.
+    var searchInput = document.getElementById('nfMediaSearch');
+    if (searchInput) {
+        var searchTimer;
+        searchInput.addEventListener('input', function () {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(function () {
+                nfMediaState.q = searchInput.value;
+                nfMediaState.page = 1;
+                nfLoadMedia();
+            }, 300);
+        });
+    }
+    var prevBtn = document.getElementById('nfMediaPrev');
+    var nextBtn = document.getElementById('nfMediaNext');
+    if (prevBtn) prevBtn.addEventListener('click', function () { if (nfMediaState.page > 1) { nfMediaState.page--; nfLoadMedia(); } });
+    if (nextBtn) nextBtn.addEventListener('click', function () { nfMediaState.page++; nfLoadMedia(); });
 })();
 </script>
 <?php endif; ?>

@@ -70,4 +70,37 @@ class MediaAjax
             return (new Response())->json(['error' => $e->getMessage()], 422);
         }
     }
+
+    /**
+     * Обновление метаданных (alt/title) медиафайла.
+     */
+    public function update(Application $app): Response
+    {
+        if (!is_logged_in()) {
+            return (new Response())->json(['error' => 'Unauthorized'], 401);
+        }
+        if (!Csrf::verify((string) $app->request->input('_csrf', ''))) {
+            return (new Response())->json(['error' => 'CSRF token mismatch'], 403);
+        }
+
+        $id = (int) $app->request->input('id', '0');
+        $item = MediaRepository::byId($id);
+        if (!$item) {
+            return (new Response())->json(['error' => 'Not found'], 404);
+        }
+
+        $data = [];
+        if ($app->request->has('alt')) {
+            $data['alt'] = trim((string) $app->request->input('alt', ''));
+        }
+        if ($app->request->has('title')) {
+            $data['title'] = trim((string) $app->request->input('title', ''));
+        }
+
+        if ($data) {
+            MediaRepository::update($id, $data);
+        }
+
+        return (new Response())->json(['ok' => true]);
+    }
 }
