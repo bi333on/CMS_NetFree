@@ -51,9 +51,7 @@ class BuilderController
             $doc = Document::parse($raw);
         }
 
-        // Экранируем "</" как "<\/", чтобы JSON нельзя было разорвать через "</script>".
-        $documentJson = str_replace('</', '<\\/', json_encode($doc, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-
+        // Экранирование происходит во вью через JSON.parse — сюда передаём сырые данные.
         $autosave = RevisionRepository::latestAutosave($type, $id);
         $autosaveInfo = $autosave
             ? ['id' => (int) $autosave['id'], 'created_at' => $autosave['created_at']]
@@ -63,10 +61,10 @@ class BuilderController
             'type'      => $type,
             'id'        => $id,
             'title'     => (string) ($entity['title'] ?? ''),
-            'document'  => $documentJson,
+            'document'  => $doc,
             'canvasUrl' => '/admin/builder/canvas/' . $type . '/' . $id,
             'backUrl'   => $type === 'page' ? '/admin/pages' : '/admin/posts',
-            'autosave'  => json_encode($autosaveInfo, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            'autosave'  => $autosaveInfo,
         ];
 
         $view = __DIR__ . '/../../private-admin/views/builder.php';

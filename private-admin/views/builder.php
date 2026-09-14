@@ -1,5 +1,5 @@
 <?php
-/** @var string $type @var int $id @var string $title @var string $document @var string $canvasUrl @var string $backUrl */
+/** @var string $type @var int $id @var string $title @var array $document @var string $canvasUrl @var string $backUrl @var ?array $autosave */
 $adminTitle = 'Конструктор — NetFree';
 
 // Ассеты инлайним: на некоторых хостингах статика через /nf-assets не проксируется в PHP.
@@ -10,8 +10,29 @@ if (is_file($coreAssets . '/builder.css')) {
     $builderCss = (string) file_get_contents($coreAssets . '/builder.css');
 }
 if (is_file($coreAssets . '/builder.js')) {
-    $builderJs = str_replace('</script', '<\/script', (string) file_get_contents($coreAssets . '/builder.js'));
+    $builderJs = (string) file_get_contents($coreAssets . '/builder.js');
 }
+
+// Конфиг для JS встраиваем через JSON.parse: экранируем <, >, &, чтобы ни один символ
+// контента не смог разорвать тег <script>.
+$config = [
+    'type'            => $type,
+    'id'              => $id,
+    'document'        => $document,
+    'csrf'            => csrf_token(),
+    'blocksUrl'       => url('admin/ajax/builder/blocks'),
+    'renderUrl'       => url('admin/ajax/builder/render'),
+    'saveUrl'         => url('admin/ajax/builder/save'),
+    'autosaveUrl'     => url('admin/ajax/builder/autosave'),
+    'revisionsUrl'    => url('admin/ajax/builder/revisions'),
+    'restoreUrl'      => url('admin/ajax/builder/revisions/restore'),
+    'previewTokenUrl' => url('admin/ajax/builder/preview-token'),
+    'mediaUrl'        => url('admin/ajax/media'),
+    'mediaUploadUrl'  => url('admin/ajax/media/upload'),
+    'autosave'        => $autosave,
+];
+$configJson = json_encode($config, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+$configJson = str_replace(['<', '>', '&'], ['\u003c', '\u003e', '\u0026'], (string) $configJson);
 ?>
 <!DOCTYPE html>
 <html lang="ru">
@@ -76,22 +97,7 @@ if (is_file($coreAssets . '/builder.js')) {
 </div>
 
 <script>
-window.NF_BUILDER_CONFIG = {
-    type: <?= json_encode($type) ?>,
-    id: <?= (int) $id ?>,
-    document: <?= $document ?>,
-    csrf: <?= json_encode(csrf_token()) ?>,
-    blocksUrl: <?= json_encode(url('admin/ajax/builder/blocks')) ?>,
-    renderUrl: <?= json_encode(url('admin/ajax/builder/render')) ?>,
-    saveUrl: <?= json_encode(url('admin/ajax/builder/save')) ?>,
-    autosaveUrl: <?= json_encode(url('admin/ajax/builder/autosave')) ?>,
-    revisionsUrl: <?= json_encode(url('admin/ajax/builder/revisions')) ?>,
-    restoreUrl: <?= json_encode(url('admin/ajax/builder/revisions/restore')) ?>,
-    previewTokenUrl: <?= json_encode(url('admin/ajax/builder/preview-token')) ?>,
-    mediaUrl: <?= json_encode(url('admin/ajax/media')) ?>,
-    mediaUploadUrl: <?= json_encode(url('admin/ajax/media/upload')) ?>,
-    autosave: <?= $autosave ?>
-};
+window.NF_BUILDER_CONFIG = JSON.parse(<?= json_encode($configJson) ?>);
 </script>
 <script><?= $builderJs ?></script>
 </body>
