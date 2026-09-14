@@ -13,6 +13,7 @@
         <a class="site-logo" href="<?= e(url('/')) ?>"><?= e(config('site.name', 'NetFree')) ?></a>
         <nav class="site-nav">
             <a href="<?= e(url('/')) ?>">Главная</a>
+            <a href="<?= e(url('blog')) ?>">Блог</a>
             <a href="<?= e(url('about')) ?>">О нас</a>
         </nav>
     </div>

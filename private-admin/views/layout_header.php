@@ -51,6 +51,11 @@ $adminTitle = $adminTitle ?? 'NetFree — админ-панель';
     <nav class="admin-nav">
         <a href="<?= e(url('admin')) ?>">Обзор</a>
         <a href="<?= e(url('admin/pages')) ?>">Страницы</a>
+        <a href="<?= e(url('admin/posts')) ?>">Записи</a>
+        <a href="<?= e(url('admin/categories')) ?>">Категории</a>
+        <a href="<?= e(url('admin/media')) ?>">Медиа</a>
+        <a href="<?= e(url('admin/settings')) ?>">Настройки</a>
+        <a href="<?= e(url('admin/update')) ?>">Обновление</a>
     </nav>
     <main class="admin-content">
 <?php endif; ?>

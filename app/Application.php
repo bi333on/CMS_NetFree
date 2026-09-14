@@ -56,6 +56,16 @@ class Application
 
         Database::connect($this->config->get('database', []));
 
+        // Достраиваем недостающие таблицы (идемпотентно).
+        try {
+            Migrations::run();
+        } catch (\Throwable $e) {
+            // Не роняем сайт, если миграции ещё не прогнаны через установщик.
+            if ((bool) $this->config->get('app.debug', false)) {
+                trigger_error('Migrations: ' . $e->getMessage(), E_USER_WARNING);
+            }
+        }
+
         $this->theme   = new Theme($this->config->get('theme.active', 'default'));
         $this->plugins = new PluginManager($this->basePath);
 
@@ -80,6 +90,19 @@ class Application
         });
 
         $this->registerAdminRoutes();
+
+        // Публичный блог: список записей и рубрика.
+        $this->router->get('/blog', function () {
+            return $this->renderBlogIndex();
+        });
+
+        $this->router->get('/blog/{slug}', function (string $slug) {
+            return $this->renderBlogPost($slug);
+        });
+
+        $this->router->get('/category/{slug}', function (string $slug) {
+            return $this->renderCategory($slug);
+        });
 
         $this->router->get('/{slug}', function (string $slug) {
             return $this->renderPage($slug);
@@ -138,6 +161,116 @@ class Application
                 return (new Response())->redirect('/admin/login');
             }
             return $controller->pageDelete($this, (int) $id);
+        });
+
+        // Записи (посты)
+        $this->router->get('/admin/posts', function () use ($controller) {
+            if (!is_logged_in()) {
+                return (new Response())->redirect('/admin/login');
+            }
+            return $controller->posts($this);
+        });
+
+        $this->router->get('/admin/posts/new', function () use ($controller) {
+            if (!is_logged_in()) {
+                return (new Response())->redirect('/admin/login');
+            }
+            return $controller->postNew($this);
+        });
+
+        $this->router->post('/admin/posts/save', function () use ($controller) {
+            if (!is_logged_in()) {
+                return (new Response())->redirect('/admin/login');
+            }
+            return $controller->postSave($this);
+        });
+
+        $this->router->get('/admin/posts/edit/{id}', function (string $id) use ($controller) {
+            if (!is_logged_in()) {
+                return (new Response())->redirect('/admin/login');
+            }
+            return $controller->postEdit($this, (int) $id);
+        });
+
+        $this->router->post('/admin/posts/delete/{id}', function (string $id) use ($controller) {
+            if (!is_logged_in()) {
+                return (new Response())->redirect('/admin/login');
+            }
+            return $controller->postDelete($this, (int) $id);
+        });
+
+        // Категории
+        $this->router->get('/admin/categories', function () use ($controller) {
+            if (!is_logged_in()) {
+                return (new Response())->redirect('/admin/login');
+            }
+            return $controller->categories($this);
+        });
+
+        $this->router->post('/admin/categories/save', function () use ($controller) {
+            if (!is_logged_in()) {
+                return (new Response())->redirect('/admin/login');
+            }
+            return $controller->categorySave($this);
+        });
+
+        $this->router->post('/admin/categories/delete/{id}', function (string $id) use ($controller) {
+            if (!is_logged_in()) {
+                return (new Response())->redirect('/admin/login');
+            }
+            return $controller->categoryDelete($this, (int) $id);
+        });
+
+        // Медиа
+        $this->router->get('/admin/media', function () use ($controller) {
+            if (!is_logged_in()) {
+                return (new Response())->redirect('/admin/login');
+            }
+            return $controller->media($this);
+        });
+
+        $this->router->post('/admin/media/upload', function () use ($controller) {
+            if (!is_logged_in()) {
+                return (new Response())->redirect('/admin/login');
+            }
+            return $controller->mediaUpload($this);
+        });
+
+        $this->router->post('/admin/media/delete/{id}', function (string $id) use ($controller) {
+            if (!is_logged_in()) {
+                return (new Response())->redirect('/admin/login');
+            }
+            return $controller->mediaDelete($this, (int) $id);
+        });
+
+        // Настройки
+        $this->router->get('/admin/settings', function () use ($controller) {
+            if (!is_logged_in()) {
+                return (new Response())->redirect('/admin/login');
+            }
+            return $controller->settings($this);
+        });
+
+        $this->router->post('/admin/settings/save', function () use ($controller) {
+            if (!is_logged_in()) {
+                return (new Response())->redirect('/admin/login');
+            }
+            return $controller->settingsSave($this);
+        });
+
+        // Обновление ядра
+        $this->router->get('/admin/update', function () use ($controller) {
+            if (!is_logged_in()) {
+                return (new Response())->redirect('/admin/login');
+            }
+            return $controller->update($this);
+        });
+
+        $this->router->post('/admin/update/run', function () use ($controller) {
+            if (!is_logged_in()) {
+                return (new Response())->redirect('/admin/login');
+            }
+            return $controller->updateRun($this);
         });
     }
 
@@ -198,6 +331,36 @@ class Application
             return $this->theme->render('404');
         }
         return $this->theme->render('page', ['page' => $page]);
+    }
+
+    protected function renderBlogIndex(): string
+    {
+        $posts = \NetFree\Content\PostRepository::published();
+        $categories = \NetFree\Content\CategoryRepository::all();
+        return $this->theme->render('blog_index', ['posts' => $posts, 'categories' => $categories]);
+    }
+
+    protected function renderBlogPost(string $slug): string
+    {
+        $post = \NetFree\Content\PostRepository::bySlug($slug);
+        if (!$post) {
+            return $this->theme->render('404');
+        }
+        return $this->theme->render('blog_post', ['post' => $post]);
+    }
+
+    protected function renderCategory(string $slug): string
+    {
+        $category = \NetFree\Content\CategoryRepository::bySlug($slug);
+        if (!$category) {
+            return $this->theme->render('404');
+        }
+        $posts = \NetFree\Content\PostRepository::byCategory($slug);
+        return $this->theme->render('blog_index', [
+            'posts'      => $posts,
+            'categories' => \NetFree\Content\CategoryRepository::all(),
+            'category'   => $category,
+        ]);
     }
 
     protected function handleException(Throwable $e): void
