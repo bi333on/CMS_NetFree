@@ -66,6 +66,9 @@ class Updater
         curl_close($ch);
 
         if ($code !== 200) {
+            if ($code === 404 && $token === '') {
+                throw new \RuntimeException('Репозиторий не найден или приватный. Введите GitHub-токен для доступа к репозиторию.');
+            }
             throw new \RuntimeException('Не удалось получить данные репозитория (HTTP ' . $code . '). Проверьте токен.');
         }
         $meta = json_decode($info, true);
