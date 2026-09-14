@@ -89,6 +89,16 @@ class Application
             return (new Response())->setHeader('Content-Type', $mime)->setBody((string) file_get_contents($path));
         });
 
+        // Отдача загруженных медиафайлов из public/uploads/.
+        $this->router->get('/uploads/{file}', function (string $file) {
+            $file = basename($file);
+            $path = $this->basePath . '/public/uploads/' . $file;
+            if (!is_file($path)) {
+                return (new Response())->setStatus(404)->setBody('Not found');
+            }
+            return $this->serveFile($path);
+        });
+
         $this->registerAdminRoutes();
 
         // Публичный блог: список записей и рубрика.
@@ -372,6 +382,28 @@ class Application
             'categories' => \NetFree\Content\CategoryRepository::all(),
             'category'   => $category,
         ]);
+    }
+
+    /**
+     * Отдаёт файл с правильным Content-Type.
+     */
+    protected function serveFile(string $path): Response
+    {
+        $mimes = [
+            'jpg'  => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png'  => 'image/png',
+            'gif'  => 'image/gif',
+            'webp' => 'image/webp',
+            'svg'  => 'image/svg+xml',
+            'pdf'  => 'application/pdf',
+        ];
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        $mime = $mimes[$ext] ?? 'application/octet-stream';
+
+        return (new Response())
+            ->setHeader('Content-Type', $mime)
+            ->setBody((string) file_get_contents($path));
     }
 
     protected function handleException(Throwable $e): void
