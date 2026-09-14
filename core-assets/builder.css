@@ -172,7 +172,7 @@ html, body.nf-builder-body {
 .b-overlay { position: absolute; inset: 0; pointer-events: none; }
 .b-hover {
     position: absolute;
-    border: 1px solid var(--b-accent);
+    border: 1px solid transparent;
     pointer-events: auto;
     cursor: pointer;
 }

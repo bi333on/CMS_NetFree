@@ -259,15 +259,16 @@
         var d = doc();
         if (!d) return;
         var frameRect = state.iframe.getBoundingClientRect();
-        var wrapRect = $('#bCanvasWrap').getBoundingClientRect();
+        var wrap = $('#bCanvasWrap');
+        var wrapRect = wrap.getBoundingClientRect();
         var els = d.querySelectorAll('.nf-section, .nf-col, .nf-widget');
         els.forEach(function (el) {
             var id = (el.id || '').replace(/^nf-/, '');
             var box = el.getBoundingClientRect();
             var div = document.createElement('div');
             div.className = 'b-hover' + (id === state.selectedId ? ' selected' : '');
-            div.style.left = (frameRect.left + box.left - wrapRect.left) + 'px';
-            div.style.top = (frameRect.top + box.top - wrapRect.top) + 'px';
+            div.style.left = (frameRect.left + box.left - wrapRect.left + wrap.scrollLeft) + 'px';
+            div.style.top = (frameRect.top + box.top - wrapRect.top + wrap.scrollTop) + 'px';
             div.style.width = box.width + 'px';
             div.style.height = box.height + 'px';
             div.dataset.id = id;
