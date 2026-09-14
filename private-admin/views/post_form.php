@@ -10,53 +10,72 @@ $featured  = $post['featured_image'] ?? '';
 ?>
 <?php include __DIR__ . '/layout_header.php'; ?>
 
-<div class="card">
-    <h1><?= $post ? 'Редактирование записи' : 'Новая запись' ?></h1>
+<h1 style="margin-bottom:18px;"><?= $post ? 'Редактирование записи' : 'Новая запись' ?></h1>
 
-    <?php if (!empty($error)): ?>
-        <div class="flash error"><?= e($error) ?></div>
+<?php if (!empty($error)): ?>
+    <div class="flash error"><?= e($error) ?></div>
+<?php endif; ?>
+
+<form method="post" action="<?= e(url('admin/posts/save')) ?>">
+    <?= csrf_field() ?>
+    <?php if ($post): ?>
+        <input type="hidden" name="id" value="<?= (int) $post['id'] ?>">
     <?php endif; ?>
 
-    <form method="post" action="<?= e(url('admin/posts/save')) ?>">
-        <?= csrf_field() ?>
-        <?php if ($post): ?>
-            <input type="hidden" name="id" value="<?= (int) $post['id'] ?>">
-        <?php endif; ?>
+    <div class="nf-editor-layout">
+        <!-- Левая колонка: основные поля -->
+        <div class="nf-editor-main">
+            <div class="card">
+                <label>Заголовок *</label>
+                <input type="text" name="title" value="<?= e($title) ?>" required>
 
-        <label>Заголовок *</label>
-        <input type="text" name="title" value="<?= e($title) ?>" required>
+                <label>Slug (URL)</label>
+                <input type="text" name="slug" value="<?= e($slug) ?>" placeholder="генерируется из заголовка">
 
-        <label>Slug (URL)</label>
-        <input type="text" name="slug" value="<?= e($slug) ?>" placeholder="генерируется из заголовка">
+                <label>Анонс (excerpt)</label>
+                <input type="text" name="excerpt" value="<?= e($excerpt) ?>">
 
-        <label>Категория</label>
-        <select name="category_id" style="width:100%;padding:9px;border:1px solid #d1d5db;border-radius:6px;margin:6px 0 14px;">
-            <option value="0">Без категории</option>
-            <?php foreach ($categories as $c): ?>
-                <option value="<?= (int) $c['id'] ?>" <?= (int) $categoryId === (int) $c['id'] ? 'selected' : '' ?>><?= e($c['name']) ?></option>
-            <?php endforeach; ?>
-        </select>
-
-        <label>Статус</label>
-        <select name="status" style="width:100%;padding:9px;border:1px solid #d1d5db;border-radius:6px;margin:6px 0 14px;">
-            <option value="published" <?= $status === 'published' ? 'selected' : '' ?>>Опубликована</option>
-            <option value="draft" <?= $status === 'draft' ? 'selected' : '' ?>>Черновик</option>
-        </select>
-
-        <label>Анонс (excerpt)</label>
-        <input type="text" name="excerpt" value="<?= e($excerpt) ?>">
-
-        <label>URL главного изображения</label>
-        <input type="text" name="featured_image" value="<?= e($featured) ?>">
-
-        <label>Контент</label>
-        <textarea name="content" id="nfContent" class="nf-editor"><?= e($content) ?></textarea>
-
-        <div style="margin-top:16px;" class="row">
-            <button type="submit" class="btn">Сохранить</button>
-            <a class="btn secondary" href="<?= e(url('admin/posts')) ?>">Отмена</a>
+                <label>Контент</label>
+                <textarea name="content" id="nfContent" class="nf-editor"><?= e($content) ?></textarea>
+            </div>
         </div>
-    </form>
-</div>
+
+        <!-- Правая колонка: сайдбар как в WP -->
+        <div class="nf-editor-side">
+            <div class="nf-sidebox">
+                <h3>Публикация</h3>
+                <label>Статус</label>
+                <select name="status">
+                    <option value="published" <?= $status === 'published' ? 'selected' : '' ?>>Опубликована</option>
+                    <option value="draft" <?= $status === 'draft' ? 'selected' : '' ?>>Черновик</option>
+                </select>
+                <button type="submit" class="btn">Сохранить</button>
+                <a class="btn secondary" style="margin-top:8px;display:block;text-align:center;" href="<?= e(url('admin/posts')) ?>">Отмена</a>
+            </div>
+
+            <div class="nf-sidebox">
+                <h3>Категория</h3>
+                <select name="category_id">
+                    <option value="0">Без категории</option>
+                    <?php foreach ($categories as $c): ?>
+                        <option value="<?= (int) $c['id'] ?>" <?= (int) $categoryId === (int) $c['id'] ? 'selected' : '' ?>><?= e($c['name']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <div class="nf-sidebox">
+                <h3>Изображение записи</h3>
+                <div class="nf-featured-preview<?= $featured ? '' : ' empty' ?>" id="nfFeaturedPreview">
+                    <?= $featured ? '<img src="' . e($featured) . '" alt="">' : 'Изображение не выбрано' ?>
+                </div>
+                <input type="hidden" name="featured_image" id="nfFeaturedImage" value="<?= e($featured) ?>">
+                <div class="row">
+                    <button type="button" class="btn" style="flex:1;" onclick="nfPickFeatured()">Выбрать</button>
+                    <button type="button" class="btn danger" onclick="nfRemoveFeatured()">Убрать</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
 
 <?php include __DIR__ . '/layout_footer.php'; ?>

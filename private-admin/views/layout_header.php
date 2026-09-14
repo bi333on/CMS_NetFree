@@ -42,6 +42,18 @@ $adminTitle = $adminTitle ?? 'NetFree — админ-панель';
         .btn.danger:hover { background:#b91c1c; }
         .row { display:flex; gap:8px; align-items:center; }
         h1 { margin-top:0; font-size:1.5rem; letter-spacing:-.02em; }
+        /* Двухколоночный макет формы (как в WP) */
+        .nf-editor-layout { display:flex; gap:24px; align-items:flex-start; }
+        .nf-editor-main { flex:1; min-width:0; }
+        .nf-editor-side { width:280px; flex-shrink:0; }
+        .nf-sidebox { background:#fff; border:1px solid var(--nf-border); border-radius:10px; padding:16px; margin-bottom:16px; }
+        .nf-sidebox h3 { margin:0 0 12px; font-size:.85rem; text-transform:uppercase; letter-spacing:.04em; color:var(--nf-muted); }
+        .nf-sidebox select, .nf-sidebox input[type=text] { margin-bottom:0; }
+        .nf-sidebox .btn { width:100%; text-align:center; margin-top:4px; }
+        .nf-featured-preview { width:100%; border-radius:8px; border:1px dashed #cbd5e1; background:#f8fafc; min-height:120px; display:flex; align-items:center; justify-content:center; overflow:hidden; margin-bottom:10px; }
+        .nf-featured-preview img { max-width:100%; max-height:160px; display:block; }
+        .nf-featured-preview.empty { color:#94a3b8; font-size:.85rem; }
+        @media (max-width: 860px) { .nf-editor-layout { flex-direction:column; } .nf-editor-side { width:100%; } }
         /* Модал */
         .nf-modal-overlay { display:none; position:fixed; inset:0; background:rgba(15,23,42,.55); z-index:2147483000; }
         .nf-modal { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; border-radius:12px; width:720px; max-width:95%; max-height:85%; overflow:auto; padding:24px; box-shadow:0 24px 64px rgba(15,23,42,.35); }

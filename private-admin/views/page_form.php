@@ -8,40 +8,51 @@ $published = isset($page) ? (bool) $page['is_published'] : true;
 ?>
 <?php include __DIR__ . '/layout_header.php'; ?>
 
-<div class="card">
-    <h1><?= $page ? 'Редактирование страницы' : 'Новая страница' ?></h1>
+<h1 style="margin-bottom:18px;"><?= $page ? 'Редактирование страницы' : 'Новая страница' ?></h1>
 
-    <?php if (!empty($error)): ?>
-        <div class="flash error"><?= e($error) ?></div>
+<?php if (!empty($error)): ?>
+    <div class="flash error"><?= e($error) ?></div>
+<?php endif; ?>
+
+<form method="post" action="<?= e(url('admin/pages/save')) ?>">
+    <?= csrf_field() ?>
+    <?php if ($page): ?>
+        <input type="hidden" name="id" value="<?= (int) $page['id'] ?>">
     <?php endif; ?>
 
-    <form method="post" action="<?= e(url('admin/pages/save')) ?>">
-        <?= csrf_field() ?>
-        <?php if ($page): ?>
-            <input type="hidden" name="id" value="<?= (int) $page['id'] ?>">
-        <?php endif; ?>
+    <div class="nf-editor-layout">
+        <!-- Левая колонка: основные поля -->
+        <div class="nf-editor-main">
+            <div class="card">
+                <label>Заголовок *</label>
+                <input type="text" name="title" value="<?= e($title) ?>" required>
 
-        <label>Заголовок *</label>
-        <input type="text" name="title" value="<?= e($title) ?>" required>
+                <label>Slug (URL)</label>
+                <input type="text" name="slug" value="<?= e($slug) ?>" placeholder="генерируется из заголовка">
 
-        <label>Slug (URL)</label>
-        <input type="text" name="slug" value="<?= e($slug) ?>" placeholder="генерируется из заголовка">
-
-        <label>Meta description</label>
-        <input type="text" name="meta_desc" value="<?= e($meta) ?>">
-
-        <label>Контент</label>
-        <textarea name="content" id="nfContent" class="nf-editor"><?= e($content) ?></textarea>
-
-        <label>
-            <input type="checkbox" name="is_published" value="1" <?= $published ? 'checked' : '' ?>> Опубликована
-        </label>
-
-        <div style="margin-top:16px;" class="row">
-            <button type="submit" class="btn">Сохранить</button>
-            <a class="btn secondary" href="<?= e(url('admin/pages')) ?>">Отмена</a>
+                <label>Контент</label>
+                <textarea name="content" id="nfContent" class="nf-editor"><?= e($content) ?></textarea>
+            </div>
         </div>
-    </form>
-</div>
+
+        <!-- Правая колонка: сайдбар -->
+        <div class="nf-editor-side">
+            <div class="nf-sidebox">
+                <h3>Публикация</h3>
+                <label>
+                    <input type="checkbox" name="is_published" value="1" <?= $published ? 'checked' : '' ?> style="width:auto;margin:0 6px 0 0;"> Опубликована
+                </label>
+                <button type="submit" class="btn" style="margin-top:10px;">Сохранить</button>
+                <a class="btn secondary" style="margin-top:8px;display:block;text-align:center;" href="<?= e(url('admin/pages')) ?>">Отмена</a>
+            </div>
+
+            <div class="nf-sidebox">
+                <h3>SEO</h3>
+                <label>Meta description</label>
+                <input type="text" name="meta_desc" value="<?= e($meta) ?>">
+            </div>
+        </div>
+    </div>
+</form>
 
 <?php include __DIR__ . '/layout_footer.php'; ?>

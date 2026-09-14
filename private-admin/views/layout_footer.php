@@ -116,6 +116,29 @@
         document.getElementById('nfMediaModal').style.display = 'none';
     };
 
+    // Выбор главного изображения записи (в сайдбаре).
+    window.nfPickFeatured = function () {
+        nfOpenMedia(function (url) {
+            var input = document.getElementById('nfFeaturedImage');
+            var preview = document.getElementById('nfFeaturedPreview');
+            if (input) input.value = url;
+            if (preview) {
+                preview.classList.remove('empty');
+                preview.innerHTML = '<img src="' + esc(url) + '" alt="">';
+            }
+        });
+    };
+
+    window.nfRemoveFeatured = function () {
+        var input = document.getElementById('nfFeaturedImage');
+        var preview = document.getElementById('nfFeaturedPreview');
+        if (input) input.value = '';
+        if (preview) {
+            preview.classList.add('empty');
+            preview.innerHTML = 'Изображение не выбрано';
+        }
+    };
+
     function nfLoadMedia() {
         fetch('<?= e(url('admin/ajax/media')) ?>')
             .then(function (r) { return r.json(); })
