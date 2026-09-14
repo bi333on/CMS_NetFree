@@ -41,7 +41,6 @@
         function splitBrToParagraphs(html) {
             return html
                 .replace(/(?:<br\s*\/?>\s*)+/gi, '</p><p>')
-                .replace(/<p>\s*<\/p>/gi, '')
                 .replace(/<p>\s*<\/p>/gi, '');
         }
 
@@ -68,8 +67,7 @@
             },
             setup: function (editor) {
                 editor.on('init', function () {
-                    var initial = editor.getContent();
-                    editor.setContent(splitBrToParagraphs(initial));
+                    editor.setContent(splitBrToParagraphs(editor.getContent()));
                 });
                 editor.on('change', function () {
                     editor.save();
@@ -77,6 +75,19 @@
             }
         });
     };
+
+    // Автозапуск редактора для всех textarea с классом .nf-editor.
+    function initAllEditors() {
+        var areas = document.querySelectorAll('textarea.nf-editor');
+        for (var i = 0; i < areas.length; i++) {
+            if (!areas[i].id) {
+                areas[i].id = 'nfEditor' + i;
+            }
+            nfInitEditor(areas[i].id);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', initAllEditors);
 
     // --- Модал ---
     var currentCallback = null;
