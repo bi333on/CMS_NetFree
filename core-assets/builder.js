@@ -321,6 +321,23 @@
             div.dataset.id = id;
             // Редактируемый текстовый виджет: клики по телу уходят в iframe (contenteditable).
             var found = findNode(id);
+
+            // Подпись блока (название виджета/секции/колонки).
+            if (found) {
+                var label = document.createElement('div');
+                label.className = 'b-label';
+                if (found.kind === 'widget') {
+                    label.textContent = (state.blocks[found.node.type] && state.blocks[found.node.type].label) || found.node.type;
+                } else if (found.kind === 'column') {
+                    label.textContent = 'Колонка';
+                } else if (found.node.type === 'free') {
+                    label.textContent = 'Свободная секция';
+                } else {
+                    label.textContent = 'Секция';
+                }
+                div.appendChild(label);
+            }
+
             var editable = found && found.kind === 'widget' && (found.node.type === 'heading' || found.node.type === 'text');
 
             if (found && found.free && found.kind === 'widget') {

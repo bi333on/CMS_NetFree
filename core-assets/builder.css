@@ -39,6 +39,7 @@ body.b-dragging .b-hover { cursor: move; }
     cursor: move;
     z-index: 100;
     opacity: .85;
+    pointer-events: auto;
 }
 .b-drag-grip:hover { opacity: 1; }
 
