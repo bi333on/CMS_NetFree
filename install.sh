@@ -26,6 +26,11 @@ BRANCH="${BRANCH:-master}"
 SITE_DOMAIN="${SITE_DOMAIN:-}"
 APP_USER="${APP_USER:-www-data}"
 PHP_VERSION="${PHP_VERSION:-8.2}"
+DB_NAME="${DB_NAME:-netfree}"
+DB_USER="${DB_USER:-netfree}"
+DB_PASS="${DB_PASS:-$(openssl rand -base64 18 2>/dev/null || echo "netfree$(date +%s)")}"
+ADMIN_USER="${ADMIN_USER:-admin}"
+ADMIN_PASS="${ADMIN_PASS:-$(openssl rand -base64 12 2>/dev/null || echo "admin$(date +%s)")}"
 
 # Автоопределение домена: первый аргумент скрипта.
 if [ -z "$SITE_DOMAIN" ] && [ $# -ge 1 ]; then
@@ -47,7 +52,7 @@ fi
 echo "==> NetFree установка на: $SITE_DOMAIN (PHP $PHP_VERSION)"
 
 # ---------------------------------------------------------------------------
-# 1. Пакеты
+# 1. Пакеты (PHP, MariaDB, git, curl)
 # ---------------------------------------------------------------------------
 apt-get update -y
 
@@ -56,6 +61,16 @@ php${PHP_VERSION}-curl php${PHP_VERSION}-zip php${PHP_VERSION}-xml php${PHP_VERS
 
 apt-get install -y git curl unzip ca-certificates "$PHP_PKG" 2>/dev/null || \
 apt-get install -y git curl unzip ca-certificates php-fpm php-mysql php-mbstring php-curl php-zip php-xml php-gd
+
+# ---------------------------------------------------------------------------
+# 1b. MariaDB
+# ---------------------------------------------------------------------------
+if ! command -v mysql >/dev/null 2>&1; then
+    echo "==> Устанавливаю MariaDB"
+    apt-get install -y mariadb-server
+fi
+systemctl enable mariadb 2>/dev/null || true
+systemctl start mariadb 2>/dev/null || service mariadb start 2>/dev/null || true
 
 # ---------------------------------------------------------------------------
 # 2. Caddy
@@ -99,6 +114,15 @@ chown -R "$APP_USER:$APP_USER" "$APP_DIR"
 chmod -R 775 "$APP_DIR/public/uploads" "$APP_DIR/storage" "$APP_DIR/config"
 find "$APP_DIR" -type f -exec chmod 664 {} \;
 find "$APP_DIR" -type d -exec chmod 775 {} \;
+
+# ---------------------------------------------------------------------------
+# 4b. База данных (создаём БД и пользователя, если ещё не существует)
+# ---------------------------------------------------------------------------
+echo "==> Создаю базу данных"
+mysql -e "CREATE DATABASE IF NOT EXISTS \`$DB_NAME\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" 2>/dev/null || true
+mysql -e "CREATE USER IF NOT EXISTS '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASS';" 2>/dev/null || true
+mysql -e "GRANT ALL PRIVILEGES ON \`$DB_NAME\`.* TO '$DB_USER'@'localhost';" 2>/dev/null || true
+mysql -e "FLUSH PRIVILEGES;" 2>/dev/null || true
 
 # ---------------------------------------------------------------------------
 # 5. Caddy конфиг
@@ -150,9 +174,16 @@ echo " Сайт:        http://$SITE_DOMAIN"
 echo " Установка:   http://$SITE_DOMAIN/install.php"
 echo " Каталог:     $APP_DIR"
 echo ""
+echo " Данные MySQL (введите в форму установки):"
+echo "   Хост:        localhost"
+echo "   Порт:        3306"
+echo "   База:        $DB_NAME"
+echo "   Пользователь:$DB_USER"
+echo "   Пароль:      $DB_PASS"
+echo ""
 echo " Дальше:"
 echo " 1) Откройте http://$SITE_DOMAIN/install.php в браузере."
-echo " 2) Заполните данные MySQL и администратора."
+echo " 2) Введите данные MySQL выше + придумайте логин/пароль администратора."
 echo " 3) После установки УДАЛИТЕ: $APP_DIR/public/install.php"
 echo ""
 echo " Повторный запуск этого скрипта обновит код с GitHub,"

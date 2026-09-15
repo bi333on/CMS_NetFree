@@ -46,7 +46,7 @@ $alreadyInstalled = is_file(NETFREE_ENV_FILE);
 // Шаг 2 — обработка формы
 // ---------------------------------------------------------------------------
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $allRequirementsOk && !$alreadyInstalled) {
-    $dbHost     = trim((string) ($_POST['db_host'] ?? '127.0.0.1'));
+    $dbHost     = trim((string) ($_POST['db_host'] ?? 'localhost'));
     $dbPort     = (int) ($_POST['db_port'] ?? 3306);
     $dbName     = trim((string) ($_POST['db_name'] ?? ''));
     $dbUser     = trim((string) ($_POST['db_user'] ?? ''));
@@ -226,7 +226,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $allRequirementsOk && !$alreadyInst
             <form method="post" <?= $allRequirementsOk ? '' : 'style="opacity:.5;pointer-events:none"' ?>>
                 <h3>База данных (MySQL)</h3>
                 <div class="grid">
-                    <div><label>Хост</label><input type="text" name="db_host" value="127.0.0.1" required></div>
+                    <div><label>Хост</label><input type="text" name="db_host" value="localhost" required></div>
                     <div><label>Порт</label><input type="number" name="db_port" value="3306" required></div>
                 </div>
                 <div class="grid">
