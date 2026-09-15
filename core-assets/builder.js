@@ -551,9 +551,9 @@
         if (state.selectedId) {
             var sel = findNode(state.selectedId);
             if (sel) {
-                if (sel.free) { target = sel.node; isFree = true; }
+                if (sel.free) { target = sel.section; isFree = true; }
                 else if (sel.kind === 'column') target = sel.node;
-                else if (sel.kind === 'widget') { target = sel.column; isFree = !!sel.free; }
+                else if (sel.kind === 'widget') target = sel.column;
                 else if (sel.kind === 'section') {
                     if (sel.node.type === 'free') { target = sel.node; isFree = true; }
                     else target = (sel.node.columns || [])[0] || null;
@@ -572,11 +572,16 @@
         p.then(function () {
             var w = newNode(type, isFree);
             if (isFree) {
-                target.widgets = target.widgets || [];
-                target.widgets.push(w);
-            } else {
-                target.widgets = target.widgets || [];
-                target.widgets.push(w);
+                // Каскадное смещение новых слоёв, чтобы они не слипались в одной точке.
+                var count = (target.widgets || []).length;
+                w.settings.pos = { x: 10 + (count % 5) * 8, y: 10 + (count % 5) * 8, w: 40 };
+                w.settings.z = count;
+            }
+            target.widgets = target.widgets || [];
+            target.widgets.push(w);
+            if (isFree) {
+                // Пересчитываем z-index слоёв.
+                target.widgets.forEach(function (ww, i) { ww.settings = ww.settings || {}; ww.settings.z = i; });
             }
             pushHistory();
             rerenderSection(findNode(target.id).section).then(function () { select(w.id); });
@@ -1302,17 +1307,21 @@
     }
     function insertWidgetIntoSelection(w) {
         var target = null;
+        var isFree = false;
         if (state.selectedId) {
             var sel = findNode(state.selectedId);
             if (sel) {
-                if (sel.free) target = sel.node;
+                if (sel.free) { target = sel.section; isFree = true; }
                 else if (sel.kind === 'column') target = sel.node;
                 else if (sel.kind === 'widget') target = sel.column;
                 else if (sel.kind === 'section') {
-                    if (sel.node.type === 'free') { target = sel.node; w.settings = w.settings || { pos: { x: 10, y: 10, w: 50 }, z: 0 }; }
+                    if (sel.node.type === 'free') { target = sel.node; isFree = true; }
                     else target = (sel.node.columns || [])[0] || null;
                 }
             }
+        }
+        if (isFree && !w.settings) {
+            w.settings = { pos: { x: 10, y: 10, w: 50 }, z: 0 };
         }
         if (!target) {
             var s = newSection();
@@ -1321,11 +1330,18 @@
             insertSection(s).then(function () { appendWidget(target, w); });
             return;
         }
-        appendWidget(target, w);
+        appendWidget(target, w, isFree);
     }
-    function appendWidget(target, w) {
+    function appendWidget(target, w, isFree) {
         target.widgets = target.widgets || [];
+        if (isFree && !w.settings) {
+            var count = target.widgets.length;
+            w.settings = { pos: { x: 10 + (count % 5) * 8, y: 10 + (count % 5) * 8, w: 40 }, z: count };
+        }
         target.widgets.push(w);
+        if (isFree) {
+            target.widgets.forEach(function (ww, i) { ww.settings = ww.settings || {}; ww.settings.z = i; });
+        }
         pushHistory();
         rerenderSection(findNode(target.id).section).then(function () { select(w.id); });
     }
