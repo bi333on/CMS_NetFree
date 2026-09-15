@@ -57,12 +57,6 @@ php${PHP_VERSION}-curl php${PHP_VERSION}-zip php${PHP_VERSION}-xml php${PHP_VERS
 apt-get install -y git curl unzip ca-certificates "$PHP_PKG" 2>/dev/null || \
 apt-get install -y git curl unzip ca-certificates php-fpm php-mysql php-mbstring php-curl php-zip php-xml php-gd
 
-# Composer (для автозагрузчика — опционально, ядро работает и без него)
-if ! command -v composer >/dev/null 2>&1; then
-    echo "==> Устанавливаю Composer"
-    curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-fi
-
 # ---------------------------------------------------------------------------
 # 2. Caddy
 # ---------------------------------------------------------------------------
@@ -81,6 +75,10 @@ fi
 # 3. Клонирование
 # ---------------------------------------------------------------------------
 echo "==> Клонирую репозиторий в $APP_DIR"
+
+# Доверяем каталогу (иначе git откажет после chown на www-data).
+git config --global --add safe.directory "$APP_DIR" 2>/dev/null || true
+
 if [ -d "$APP_DIR/.git" ]; then
     echo "    Репозиторий уже есть — обновляю (git pull)."
     git -C "$APP_DIR" fetch --all
@@ -88,6 +86,7 @@ if [ -d "$APP_DIR/.git" ]; then
 else
     mkdir -p "$(dirname "$APP_DIR")"
     git clone --branch "$BRANCH" "$REPO_URL" "$APP_DIR"
+    git config --global --add safe.directory "$APP_DIR" 2>/dev/null || true
 fi
 
 # ---------------------------------------------------------------------------
@@ -100,11 +99,6 @@ chown -R "$APP_USER:$APP_USER" "$APP_DIR"
 chmod -R 775 "$APP_DIR/public/uploads" "$APP_DIR/storage" "$APP_DIR/config"
 find "$APP_DIR" -type f -exec chmod 664 {} \;
 find "$APP_DIR" -type d -exec chmod 775 {} \;
-
-# Composer autoload (опционально, ядро сам подгружается)
-if [ -f "$APP_DIR/composer.json" ] && command -v composer >/dev/null 2>&1; then
-    (cd "$APP_DIR" && composer install --no-dev --optimize-autoloader) || true
-fi
 
 # ---------------------------------------------------------------------------
 # 5. Caddy конфиг
