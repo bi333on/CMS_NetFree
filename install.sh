@@ -144,18 +144,15 @@ $SITE_DOMAIN {
 
     encode gzip
 
+    # Отдаём существующие файлы напрямую (картинки, css, js, uploads).
+    file_server
+
     php_fastcgi unix/$PHP_SOCK
 
     try_files {path} /index.php?{query}
 
     handle_path /assets/* {
         root * $APP_DIR/themes/default
-        file_server
-    }
-
-    # Загруженные медиафайлы (картинки, документы).
-    handle_path /uploads/* {
-        root * $APP_DIR/public
         file_server
     }
 

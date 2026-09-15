@@ -7,20 +7,18 @@ example.com {
 
     encode gzip
 
+    # Отдаём существующие файлы напрямую (картинки, css, js, uploads).
+    file_server
+
+    # PHP — только для запросов на index.php / install.php и фронт-контроллера.
     php_fastcgi unix//run/php/php8.2-fpm.sock
 
-    # Все запросы на фронт-контроллер.
+    # Все остальные запросы — на фронт-контроллер.
     try_files {path} /index.php?{query}
 
-    # Статика темы.
+    # Статика темы (отдельный корень).
     handle_path /assets/* {
         root * /var/www/netfree/themes/default
-        file_server
-    }
-
-    # Загруженные медиафайлы (картинки, документы).
-    handle_path /uploads/* {
-        root * /var/www/netfree/public
         file_server
     }
 
