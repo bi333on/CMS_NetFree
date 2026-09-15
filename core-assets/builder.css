@@ -25,6 +25,11 @@ html, body.nf-builder-body {
 
 #nf-builder { display: flex; flex-direction: column; height: 100vh; }
 
+/* Активное перетаскивание свободного виджета */
+body.b-dragging { cursor: move; user-select: none; }
+body.b-dragging #bCanvas { pointer-events: none; }
+body.b-dragging .b-hover { cursor: move; }
+
 /* Шапка */
 .b-topbar {
     height: 56px;

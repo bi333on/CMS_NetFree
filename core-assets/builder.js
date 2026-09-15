@@ -338,39 +338,44 @@
 
     // Перетаскивание свободного виджета мышью (в % от секции).
     function makeFreeDraggable(handle, found) {
-        var startX = 0, startY = 0, origX = 0, origY = 0, dragging = false;
-
         handle.addEventListener('mousedown', function (e) {
             if (found.node.type === 'heading' || found.node.type === 'text') return; // текстовые — по клику в contenteditable
             e.preventDefault();
             e.stopPropagation();
             select(found.node.id);
-            dragging = true;
-            startX = e.clientX;
-            startY = e.clientY;
+
+            var startX = e.clientX;
+            var startY = e.clientY;
             var pos = found.node.settings.pos = found.node.settings.pos || { x: 0, y: 0, w: 50 };
-            origX = pos.x || 0;
-            origY = pos.y || 0;
-        });
+            var origX = pos.x || 0;
+            var origY = pos.y || 0;
 
-        document.addEventListener('mousemove', function (e) {
-            if (!dragging) return;
-            var sectionEl = doc() && doc().getElementById('nf-' + found.section.id);
-            if (!sectionEl) return;
-            var rect = sectionEl.getBoundingClientRect();
-            var dx = (e.clientX - startX) / rect.width * 100;
-            var dy = (e.clientY - startY) / rect.height * 100;
-            var pos = found.node.settings.pos;
-            pos.x = Math.max(0, Math.min(100, Math.round((origX + dx) * 10) / 10));
-            pos.y = Math.max(0, Math.min(100, Math.round((origY + dy) * 10) / 10));
-            refreshLiveCss();
-        });
+            // Отключаем iframe, чтобы родитель получал mousemove/mouseup (курсор над iframe).
+            state.iframe.style.pointerEvents = 'none';
+            document.body.classList.add('b-dragging');
 
-        document.addEventListener('mouseup', function () {
-            if (!dragging) return;
-            dragging = false;
-            pushHistory();
-            refreshOverlays();
+            function onMove(ev) {
+                var sectionEl = doc() && doc().getElementById('nf-' + found.section.id);
+                if (!sectionEl) return;
+                var rect = sectionEl.getBoundingClientRect();
+                var dx = (ev.clientX - startX) / rect.width * 100;
+                var dy = (ev.clientY - startY) / rect.height * 100;
+                pos.x = Math.max(0, Math.min(100, Math.round((origX + dx) * 10) / 10));
+                pos.y = Math.max(0, Math.min(100, Math.round((origY + dy) * 10) / 10));
+                refreshLiveCss();
+            }
+
+            function onUp() {
+                state.iframe.style.pointerEvents = '';
+                document.body.classList.remove('b-dragging');
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onUp);
+                pushHistory();
+                refreshOverlays();
+            }
+
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
         });
     }
     function renderToolbar() {
