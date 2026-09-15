@@ -17,6 +17,20 @@
     width: 100%;
 }
 
+/* Свободная секция (Zero Block): позиционирующий контейнер для слоёв. */
+.nf-section--free {
+    position: relative;
+}
+.nf-section--free.boxed-placeholder,
+.nf-section--free.nf-section--boxed {
+    max-width: 1040px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.nf-section--free > .nf-widget {
+    position: absolute;
+}
+
 .nf-row {
     display: flex;
     flex-wrap: wrap;

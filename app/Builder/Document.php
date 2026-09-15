@@ -50,6 +50,35 @@ class Document
 
     protected static function section(array $s): array
     {
+        $type = (string) ($s['type'] ?? 'section') === 'free' ? 'free' : 'section';
+
+        // Свободная секция (Zero Block): плоский список виджетов, без колонок.
+        if ($type === 'free') {
+            $widgets = [];
+            foreach (($s['widgets'] ?? []) as $widget) {
+                if (!is_array($widget)) {
+                    continue;
+                }
+                $normalized = self::widget($widget, true);
+                if ($normalized !== null) {
+                    $widgets[] = $normalized;
+                }
+            }
+
+            return [
+                'id'       => self::id($s),
+                'type'     => 'free',
+                'settings' => [
+                    'width'    => (string) ($s['settings']['width'] ?? 'boxed') === 'full' ? 'full' : 'boxed',
+                    'height'   => self::pixels($s['settings']['height'] ?? null),
+                    'minHeight'=> self::pixels($s['settings']['minHeight'] ?? null),
+                ],
+                'design'   => self::design((array) ($s['design'] ?? [])),
+                'advanced' => self::advanced((array) ($s['advanced'] ?? [])),
+                'widgets'  => $widgets,
+            ];
+        }
+
         $columns = [];
         foreach (($s['columns'] ?? []) as $column) {
             if (!is_array($column)) {
@@ -101,7 +130,7 @@ class Document
         ];
     }
 
-    protected static function widget(array $w): ?array
+    protected static function widget(array $w, bool $free = false): ?array
     {
         $type = (string) ($w['type'] ?? '');
         $def  = BlockRegistry::getInstance()->get($type);
@@ -116,13 +145,56 @@ class Document
             $data[$key] = self::field($value, (array) $field);
         }
 
-        return [
+        $widget = [
             'id'       => self::id($w),
             'type'     => $type,
             'data'     => $data,
             'design'   => self::design((array) ($w['design'] ?? [])),
             'advanced' => self::advanced((array) ($w['advanced'] ?? [])),
         ];
+
+        // Свободный виджет: абсолютное позиционирование внутри free-секции.
+        if ($free) {
+            $widget['settings'] = [
+                'pos' => self::position((array) ($w['settings']['pos'] ?? [])),
+                'z'   => (int) ($w['settings']['z'] ?? 0),
+            ];
+        }
+
+        return $widget;
+    }
+
+    /**
+     * Позиция свободного виджета: x/y/w в % (0..100), h в px или null.
+     */
+    protected static function position(array $pos): array
+    {
+        return [
+            'x' => self::clamp((float) ($pos['x'] ?? 0), 0, 100),
+            'y' => self::clamp((float) ($pos['y'] ?? 0), 0, 100),
+            'w' => self::clamp((float) ($pos['w'] ?? 50), 1, 100),
+            'h' => self::pixels($pos['h'] ?? null),
+        ];
+    }
+
+    protected static function clamp(float $value, float $min, float $max): float
+    {
+        if ($value < $min) {
+            return $min;
+        }
+        if ($value > $max) {
+            return $max;
+        }
+        return $value;
+    }
+
+    protected static function pixels($value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        $v = (int) $value;
+        return $v > 0 ? $v : null;
     }
 
     protected static function field($value, array $field): string
@@ -161,7 +233,7 @@ class Document
 
     protected static function advanced(array $a): array
     {
-        $out = ['anchor' => '', 'cssClass' => '', 'hideOn' => []];
+        $out = ['anchor' => '', 'cssClass' => '', 'hideOn' => [], 'showOnly' => []];
 
         if (isset($a['anchor']) && is_string($a['anchor'])) {
             $anchor = preg_replace('/[^a-zA-Z0-9\-_:.]/', '', (string) $a['anchor']);
@@ -172,6 +244,9 @@ class Document
         }
         if (isset($a['hideOn']) && is_array($a['hideOn'])) {
             $out['hideOn'] = array_values(array_intersect($a['hideOn'], ['tablet', 'mobile']));
+        }
+        if (isset($a['showOnly']) && is_array($a['showOnly'])) {
+            $out['showOnly'] = array_values(array_intersect($a['showOnly'], ['tablet', 'mobile']));
         }
 
         return $out;

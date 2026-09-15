@@ -21,6 +21,11 @@ class Renderer
 
     public static function renderSection(array $section): string
     {
+        // Свободная секция (Zero Block): абсолютные слои внутри relative-контейнера.
+        if (($section['type'] ?? 'section') === 'free') {
+            return self::renderFreeSection($section);
+        }
+
         $width = (string) ($section['settings']['width'] ?? 'boxed');
         $class = 'nf-section nf-section--' . ($width === 'full' ? 'full' : 'boxed');
 
@@ -39,6 +44,26 @@ class Renderer
         $inner .= '</div>';
 
         return '<section ' . self::attrs($section, $class) . $style . '>' . $inner . '</section>';
+    }
+
+    /**
+     * Free-секция: контейнер position:relative + виджеты как абсолютные слои.
+     */
+    public static function renderFreeSection(array $section): string
+    {
+        $width = (string) ($section['settings']['width'] ?? 'boxed');
+        $class = 'nf-section nf-section--free nf-section--' . ($width === 'full' ? 'full' : 'boxed');
+
+        $anchor = trim((string) ($section['advanced']['anchor'] ?? ''));
+        $inner  = $anchor !== ''
+            ? '<span id="' . e($anchor) . '" class="nf-anchor" aria-hidden="true"></span>'
+            : '';
+
+        foreach (($section['widgets'] ?? []) as $widget) {
+            $inner .= self::renderWidget($widget);
+        }
+
+        return '<section ' . self::attrs($section, $class) . '>' . $inner . '</section>';
     }
 
     public static function renderColumn(array $column): string

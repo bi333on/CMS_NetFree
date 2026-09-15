@@ -26,6 +26,10 @@ class CssGenerator
     {
         $css = '';
         foreach (($doc['sections'] ?? []) as $section) {
+            if (($section['type'] ?? 'section') === 'free') {
+                $css .= self::freeSectionCss($section);
+                continue;
+            }
             $css .= self::nodeCss($section);
             foreach (($section['columns'] ?? []) as $column) {
                 $css .= self::columnCss($column);
@@ -35,6 +39,66 @@ class CssGenerator
             }
         }
         return $css;
+    }
+
+    /**
+     * CSS свободной секции: высота + виджеты-слои.
+     */
+    protected static function freeSectionCss(array $section): string
+    {
+        $selector = '#nf-' . $section['id'];
+        $css = '';
+
+        // Высота секции (или min-height).
+        $height = (int) ($section['settings']['height'] ?? 0);
+        $minHeight = (int) ($section['settings']['minHeight'] ?? 0);
+        if ($height > 0) {
+            $css .= $selector . '{height:' . $height . "px;}\n";
+        } elseif ($minHeight > 0) {
+            $css .= $selector . '{min-height:' . $minHeight . "px;}\n";
+        } else {
+            $css .= $selector . '{min-height:300px;}' . "\n";
+        }
+
+        // Секция как позиционирующий контейнер + свой дизайн/скрытие.
+        $css .= self::nodeCss($section);
+
+        foreach (($section['widgets'] ?? []) as $widget) {
+            $css .= self::freeWidgetCss($widget);
+        }
+        return $css;
+    }
+
+    /**
+     * CSS свободного виджета: position:absolute + left/top/width/z-index
+     * с переопределениями по брейкпоинтам.
+     */
+    protected static function freeWidgetCss(array $widget): string
+    {
+        $selector = '#nf-' . $widget['id'];
+        $pos = (array) ($widget['settings']['pos'] ?? []);
+        $css = '';
+
+        $css .= $selector . '{position:absolute;';
+        $css .= 'left:' . self::num($pos['x'] ?? 0) . '%;';
+        $css .= 'top:' . self::num($pos['y'] ?? 0) . '%;';
+        $css .= 'width:' . self::num($pos['w'] ?? 50) . '%;';
+        $h = (int) ($pos['h'] ?? 0);
+        if ($h > 0) {
+            $css .= 'height:' . $h . 'px;';
+        }
+        $css .= 'z-index:' . (int) ($widget['settings']['z'] ?? 0) . ";}\n";
+
+        // Дизайн-правила виджета (учитывают собственные брейкпоинты design).
+        $css .= self::nodeCss($widget);
+
+        return $css;
+    }
+
+    protected static function num($value): string
+    {
+        $v = (float) $value;
+        return (string) round($v, 2);
     }
 
     /** Свойства, которым в live-редакторе нужно добавлять px. */
@@ -93,8 +157,18 @@ class CssGenerator
             $css .= self::designRules($selector, $design);
         }
 
+        // Скрыть на конкретных устройствах.
         foreach ((array) ($node['advanced']['hideOn'] ?? []) as $bp) {
             $css .= self::mediaOpen($bp) . $selector . '{display:none!important}' . self::mediaClose();
+        }
+
+        // Показывать ТОЛЬКО на конкретных устройствах (на остальных — скрыть).
+        $showOnly = (array) ($node['advanced']['showOnly'] ?? []);
+        if ($showOnly) {
+            $hide = array_diff(array_keys(self::BREAKPOINTS), $showOnly);
+            foreach ($hide as $bp) {
+                $css .= self::mediaOpen($bp) . $selector . '{display:none!important}' . self::mediaClose();
+            }
         }
 
         return $css;

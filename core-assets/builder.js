@@ -70,6 +70,14 @@
         for (var si = 0; si < sections.length; si++) {
             var s = sections[si];
             if (s.id === id) return { node: s, section: s, parent: null, index: si, kind: 'section' };
+            if (s.type === 'free') {
+                // Свободная секция: виджеты лежат прямо в section.widgets.
+                var fws = s.widgets || [];
+                for (var fwi = 0; fwi < fws.length; fwi++) {
+                    if (fws[fwi].id === id) return { node: fws[fwi], section: s, free: true, index: fwi, kind: 'widget' };
+                }
+                continue;
+            }
             var cols = s.columns || [];
             for (var ci = 0; ci < cols.length; ci++) {
                 var c = cols[ci];
@@ -82,17 +90,22 @@
         }
         return null;
     }
-    function newNode(type) {
+    function newNode(type, free) {
         var b = state.blocks[type] || {};
         var data = {};
         Object.keys(b.fields || {}).forEach(function (k) {
             var f = b.fields[k];
             data[k] = (f && f.default !== undefined) ? f.default : '';
         });
-        return { id: uid(), type: type, data: data, design: {}, advanced: {} };
+        var w = { id: uid(), type: type, data: data, design: {}, advanced: {} };
+        if (free) {
+            w.settings = { pos: { x: 10, y: 10, w: 50 }, z: 0 };
+        }
+        return w;
     }
     function newColumn() { return { id: uid(), type: 'column', settings: { width: { desktop: 100 } }, design: {}, advanced: {}, widgets: [] }; }
     function newSection() { return { id: uid(), type: 'section', settings: { width: 'boxed', gap: 24 }, design: {}, advanced: {}, columns: [newColumn()] }; }
+    function newFreeSection() { return { id: uid(), type: 'free', settings: { width: 'boxed', minHeight: 400 }, design: {}, advanced: {}, widgets: [] }; }
 
     // ---------------------------------------------------------------- server
     function api(url, body) {
@@ -156,6 +169,36 @@
         var css = designRules(sel, node.design);
         var hideOn = (node.advanced && node.advanced.hideOn) || [];
         hideOn.forEach(function (bp) { css += media(bp) + sel + '{display:none!important}' + '}'; });
+        var showOnly = (node.advanced && node.advanced.showOnly) || [];
+        if (showOnly.length) {
+            Object.keys(state.breakpoints).forEach(function (bp) {
+                if (showOnly.indexOf(bp) === -1) css += media(bp) + sel + '{display:none!important}' + '}';
+            });
+        }
+        return css;
+    }
+    function freeWidgetCss(w) {
+        var sel = '#nf-' + w.id;
+        var pos = (w.settings && w.settings.pos) || {};
+        var css = sel + '{position:absolute;';
+        css += 'left:' + (pos.x || 0) + '%;';
+        css += 'top:' + (pos.y || 0) + '%;';
+        css += 'width:' + (pos.w || 50) + '%;';
+        if (pos.h) css += 'height:' + pos.h + 'px;';
+        css += 'z-index:' + ((w.settings && w.settings.z) || 0) + ';';
+        css += '}' + nodeCss(w);
+        return css;
+    }
+    function freeSectionCss(s) {
+        var sel = '#nf-' + s.id;
+        var css = '';
+        var h = (s.settings && s.settings.height) || 0;
+        var mh = (s.settings && s.settings.minHeight) || 0;
+        if (h > 0) css += sel + '{height:' + h + 'px;}';
+        else if (mh > 0) css += sel + '{min-height:' + mh + 'px;}';
+        else css += sel + '{min-height:300px;}';
+        css += nodeCss(s);
+        (s.widgets || []).forEach(function (w) { css += freeWidgetCss(w); });
         return css;
     }
     function columnCss(col) {
@@ -171,6 +214,10 @@
     function generateCss() {
         var css = '';
         (state.document.sections || []).forEach(function (s) {
+            if (s.type === 'free') {
+                css += freeSectionCss(s);
+                return;
+            }
             css += nodeCss(s);
             (s.columns || []).forEach(function (c) {
                 css += columnCss(c);
@@ -280,9 +327,51 @@
             } else {
                 div.addEventListener('mousedown', function (e) { e.preventDefault(); e.stopPropagation(); select(id); });
             }
+            // Drag для свободных виджетов.
+            if (found && found.free && found.kind === 'widget') {
+                makeFreeDraggable(div, found);
+            }
             state.overlayEl.appendChild(div);
         });
         renderToolbar();
+    }
+
+    // Перетаскивание свободного виджета мышью (в % от секции).
+    function makeFreeDraggable(handle, found) {
+        var startX = 0, startY = 0, origX = 0, origY = 0, dragging = false;
+
+        handle.addEventListener('mousedown', function (e) {
+            if (found.node.type === 'heading' || found.node.type === 'text') return; // текстовые — по клику в contenteditable
+            e.preventDefault();
+            e.stopPropagation();
+            select(found.node.id);
+            dragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            var pos = found.node.settings.pos = found.node.settings.pos || { x: 0, y: 0, w: 50 };
+            origX = pos.x || 0;
+            origY = pos.y || 0;
+        });
+
+        document.addEventListener('mousemove', function (e) {
+            if (!dragging) return;
+            var sectionEl = doc() && doc().getElementById('nf-' + found.section.id);
+            if (!sectionEl) return;
+            var rect = sectionEl.getBoundingClientRect();
+            var dx = (e.clientX - startX) / rect.width * 100;
+            var dy = (e.clientY - startY) / rect.height * 100;
+            var pos = found.node.settings.pos;
+            pos.x = Math.max(0, Math.min(100, Math.round((origX + dx) * 10) / 10));
+            pos.y = Math.max(0, Math.min(100, Math.round((origY + dy) * 10) / 10));
+            refreshLiveCss();
+        });
+
+        document.addEventListener('mouseup', function () {
+            if (!dragging) return;
+            dragging = false;
+            pushHistory();
+            refreshOverlays();
+        });
     }
     function renderToolbar() {
         var old = $('.b-toolbar', state.overlayEl);
@@ -309,12 +398,34 @@
 
         btn('↑', 'Выше', function () { moveNode(state.selectedId, -1); });
         btn('↓', 'Ниже', function () { moveNode(state.selectedId, 1); });
+        if (sel.free && sel.kind === 'widget') {
+            btn('▲', 'Слой выше', function () { layerNode(state.selectedId, 1); });
+            btn('▼', 'Слой ниже', function () { layerNode(state.selectedId, -1); });
+        }
         if (sel.kind === 'section') btn('+К', 'Добавить колонку', function () { addColumn(sel.node); });
-        if (sel.kind === 'section' || sel.kind === 'column') btn('+В', 'Добавить виджет', function () { openPaletteAdd(); });
+        if (sel.kind === 'section' || sel.kind === 'column' || sel.free) btn('+В', 'Добавить виджет', function () { openPaletteAdd(); });
         btn('⧉', 'Дублировать', function () { duplicateNode(state.selectedId); });
         btn('✕', 'Удалить', function () { deleteNode(state.selectedId); });
 
         state.overlayEl.appendChild(bar);
+    }
+
+    // Изменение порядка слоёв (z-index) свободных виджетов.
+    function layerNode(id, delta) {
+        var found = findNode(id);
+        if (!found || !found.free) return;
+        var ws = found.section.widgets || [];
+        // Пересчёт z-index всех слоёв по порядку.
+        ws.forEach(function (w, i) { w.settings = w.settings || {}; w.settings.z = i; });
+        var idx = ws.indexOf(found.node);
+        var ni = idx + delta;
+        if (ni < 0 || ni >= ws.length) return;
+        ws.splice(idx, 1);
+        ws.splice(ni, 0, found.node);
+        ws.forEach(function (w, i) { w.settings.z = i; });
+        pushHistory();
+        refreshLiveCss();
+        rerenderSection(found.section).then(function () { refreshOverlays(); renderStructure(); });
     }
     function openPaletteAdd() {
         state.ptab = 'palette';
@@ -355,10 +466,13 @@
             arr.forEach(function (s) { var el = d.getElementById('nf-' + s.id); if (el) container.appendChild(el); });
             pushHistory(); refreshOverlays(); renderStructure();
         } else {
-            var siblings = sel.kind === 'column' ? sel.section.columns : sel.column.widgets;
+            var siblings;
+            if (sel.free) siblings = sel.section.widgets;
+            else siblings = sel.kind === 'column' ? sel.section.columns : sel.column.widgets;
             var nidx = sel.index + dir;
             if (nidx < 0 || nidx >= siblings.length) return;
             siblings.splice(sel.index, 1); siblings.splice(nidx, 0, sel.node);
+            if (sel.free) siblings.forEach(function (w, i) { w.settings.z = i; });
             pushHistory();
             rerenderSection(sel.section);
         }
@@ -373,7 +487,9 @@
             pushHistory();
             insertSection(copy).then(function () { select(copy.id); renderStructure(); });
         } else {
-            var siblings = sel.kind === 'column' ? sel.section.columns : sel.column.widgets;
+            var siblings;
+            if (sel.free) siblings = sel.section.widgets;
+            else siblings = sel.kind === 'column' ? sel.section.columns : sel.column.widgets;
             siblings.splice(sel.index + 1, 0, copy);
             pushHistory();
             rerenderSection(sel.section).then(function () { select(copy.id); });
@@ -385,6 +501,7 @@
             c.id = uid();
             (c.widgets || []).forEach(function (w) { w.id = uid(); });
         });
+        (node.widgets || []).forEach(function (w) { w.id = uid(); });
     }
     function deleteNode(id) {
         var sel = findNode(id);
@@ -395,7 +512,9 @@
             state.selectedId = null;
             pushHistory(); refreshLiveCss(); refreshOverlays(); renderInspector(); renderStructure();
         } else {
-            var siblings = sel.kind === 'column' ? sel.section.columns : sel.column.widgets;
+            var siblings;
+            if (sel.free) siblings = sel.section.widgets;
+            else siblings = sel.kind === 'column' ? sel.section.columns : sel.column.widgets;
             siblings.splice(sel.index, 1);
             state.selectedId = sel.section.id;
             pushHistory();
@@ -404,6 +523,12 @@
     }
     function addSection() {
         var s = newSection();
+        state.document.sections.push(s);
+        pushHistory();
+        insertSection(s).then(function () { select(s.id); renderStructure(); });
+    }
+    function addFreeSection() {
+        var s = newFreeSection();
         state.document.sections.push(s);
         pushHistory();
         insertSection(s).then(function () { select(s.id); renderStructure(); });
@@ -417,12 +542,17 @@
     }
     function addWidget(type) {
         var target = null;
+        var isFree = false;
         if (state.selectedId) {
             var sel = findNode(state.selectedId);
             if (sel) {
-                if (sel.kind === 'column') target = sel.node;
-                else if (sel.kind === 'widget') target = sel.column;
-                else if (sel.kind === 'section') target = (sel.node.columns || [])[0] || null;
+                if (sel.free) { target = sel.node; isFree = true; }
+                else if (sel.kind === 'column') target = sel.node;
+                else if (sel.kind === 'widget') { target = sel.column; isFree = !!sel.free; }
+                else if (sel.kind === 'section') {
+                    if (sel.node.type === 'free') { target = sel.node; isFree = true; }
+                    else target = (sel.node.columns || [])[0] || null;
+                }
             }
         }
         var p;
@@ -435,9 +565,14 @@
             p = Promise.resolve();
         }
         p.then(function () {
-            var w = newNode(type);
-            target.widgets = target.widgets || [];
-            target.widgets.push(w);
+            var w = newNode(type, isFree);
+            if (isFree) {
+                target.widgets = target.widgets || [];
+                target.widgets.push(w);
+            } else {
+                target.widgets = target.widgets || [];
+                target.widgets.push(w);
+            }
             pushHistory();
             rerenderSection(findNode(target.id).section).then(function () { select(w.id); });
         });
@@ -473,12 +608,24 @@
         var ul = document.createElement('ul');
         ul.className = 'b-tree';
         (state.document.sections || []).forEach(function (s) {
-            ul.appendChild(structureNode(s, 'Секция', function () { select(s.id); }, [
+            ul.appendChild(structureNode(s, s.type === 'free' ? 'Свободная секция' : 'Секция', function () { select(s.id); }, [
                 { t: '↑', fn: function () { moveNode(s.id, -1); } },
                 { t: '↓', fn: function () { moveNode(s.id, 1); } },
                 { t: '⧉', fn: function () { duplicateNode(s.id); } },
                 { t: '✕', fn: function () { deleteNode(s.id); } }
             ]));
+            if (s.type === 'free') {
+                var fwUl = document.createElement('ul');
+                (s.widgets || []).forEach(function (w) {
+                    var label = (state.blocks[w.type] && state.blocks[w.type].label) || w.type;
+                    fwUl.appendChild(structureNode(w, label, function () { select(w.id); }, [
+                        { t: '⧉', fn: function () { duplicateNode(w.id); } },
+                        { t: '✕', fn: function () { deleteNode(w.id); } }
+                    ]));
+                });
+                ul.appendChild(fwUl);
+                return;
+            }
             var colUl = document.createElement('ul');
             (s.columns || []).forEach(function (c) {
                 colUl.appendChild(structureNode(c, 'Колонка', function () { select(c.id); }, [
@@ -866,11 +1013,51 @@
         } else {
             var def = state.blocks[node.type] || {};
             var design = def.design || [];
+            if (sel.free) {
+                root.appendChild(freePositionGroup(node));
+            }
             if (design.indexOf('typography') !== -1) root.appendChild(typographyGroup(node));
             if (design.indexOf('spacing') !== -1) root.appendChild(spacingGroup(node));
             if (design.indexOf('align') !== -1) root.appendChild(alignGroup(node));
             root.appendChild(backgroundGroup(node));
         }
+    }
+
+    // Поля позиции/размера свободного виджета (X/Y/W в %, H в px).
+    function freePositionGroup(node) {
+        var g = document.createElement('div');
+        g.className = 'b-group';
+        var t = document.createElement('div'); t.className = 'b-group-title'; t.textContent = 'Позиция и размер';
+        g.appendChild(t);
+        var pos = node.settings.pos = node.settings.pos || { x: 0, y: 0, w: 50 };
+
+        function num(label, key, suffix) {
+            var input = document.createElement('input');
+            input.type = 'number';
+            input.value = pos[key];
+            input.addEventListener('change', function () {
+                pos[key] = Number(input.value) || 0;
+                refreshLiveCss();
+                refreshOverlays();
+            });
+            return field(label + (suffix || ''), input, null);
+        }
+
+        g.appendChild(num('X', 'x', ' (%)'));
+        g.appendChild(num('Y', 'y', ' (%)'));
+        g.appendChild(num('Ширина', 'w', ' (%)'));
+        g.appendChild(num('Высота', 'h', ' (px, 0 = авто)'));
+
+        var z = document.createElement('input');
+        z.type = 'number';
+        z.value = node.settings.z || 0;
+        z.addEventListener('change', function () {
+            node.settings.z = Number(z.value) || 0;
+            refreshLiveCss();
+        });
+        g.appendChild(field('Слой (z-index)', z, null));
+
+        return g;
     }
     function renderAdvancedTab(root, sel) {
         var node = sel.node;
@@ -918,6 +1105,27 @@
             });
             label.appendChild(cb);
             label.appendChild(document.createTextNode('Скрыть на ' + (bp === 'tablet' ? 'планшете' : 'телефоне')));
+            g.appendChild(label);
+        });
+
+        // Показывать ТОЛЬКО на конкретном устройстве.
+        var showOnly = (node.advanced && node.advanced.showOnly) || [];
+        ['tablet', 'mobile'].forEach(function (bp) {
+            var label = document.createElement('label');
+            label.className = 'b-check';
+            var cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.checked = showOnly.indexOf(bp) !== -1;
+            cb.addEventListener('change', function () {
+                node.advanced = node.advanced || {};
+                node.advanced.showOnly = node.advanced.showOnly || [];
+                var idx = node.advanced.showOnly.indexOf(bp);
+                if (cb.checked && idx === -1) node.advanced.showOnly.push(bp);
+                if (!cb.checked && idx !== -1) node.advanced.showOnly.splice(idx, 1);
+                refreshLiveCss(); renderInspector();
+            });
+            label.appendChild(cb);
+            label.appendChild(document.createTextNode('Показывать только на ' + (bp === 'tablet' ? 'планшете' : 'телефоне')));
             g.appendChild(label);
         });
 
@@ -1092,9 +1300,13 @@
         if (state.selectedId) {
             var sel = findNode(state.selectedId);
             if (sel) {
-                if (sel.kind === 'column') target = sel.node;
+                if (sel.free) target = sel.node;
+                else if (sel.kind === 'column') target = sel.node;
                 else if (sel.kind === 'widget') target = sel.column;
-                else if (sel.kind === 'section') target = (sel.node.columns || [])[0] || null;
+                else if (sel.kind === 'section') {
+                    if (sel.node.type === 'free') { target = sel.node; w.settings = w.settings || { pos: { x: 10, y: 10, w: 50 }, z: 0 }; }
+                    else target = (sel.node.columns || [])[0] || null;
+                }
             }
         }
         if (!target) {
@@ -1156,6 +1368,8 @@
         });
         // Кнопки.
         $('#bAddSection').addEventListener('click', addSection);
+        var bFree = $('#bAddFreeSection');
+        if (bFree) bFree.addEventListener('click', addFreeSection);
         $('#bSave').addEventListener('click', save);
         $('#bPreview').addEventListener('click', preview);
         $('#bUndo').addEventListener('click', function () {

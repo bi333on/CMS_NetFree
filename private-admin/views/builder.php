@@ -58,6 +58,7 @@ $configJson = str_replace(['<', '>', '&'], ['\u003c', '\u003e', '\u0026'], (stri
         </div>
         <div class="b-actions">
             <button type="button" id="bAddSection" class="b-btn">+ Секция</button>
+            <button type="button" id="bAddFreeSection" class="b-btn" title="Свободная секция (слои, как в Tilda)">+ Свободная</button>
             <button type="button" id="bUndo" class="b-btn" title="Отменить">↶</button>
             <button type="button" id="bRedo" class="b-btn" title="Повторить">↷</button>
             <a class="b-btn b-btn-ghost" href="<?= e(url($backUrl)) ?>">Назад</a>
