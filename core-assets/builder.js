@@ -319,17 +319,35 @@
             div.style.width = box.width + 'px';
             div.style.height = box.height + 'px';
             div.dataset.id = id;
-            // Редактируемый текстовый виджет: пропускаем клики в iframe (contenteditable).
+            // Редактируемый текстовый виджет: клики по телу уходят в iframe (contenteditable).
             var found = findNode(id);
             var editable = found && found.kind === 'widget' && (found.node.type === 'heading' || found.node.type === 'text');
-            if (id === state.selectedId && editable) {
+
+            if (found && found.free && found.kind === 'widget') {
+                // Свободные виджеты: перетаскивание.
+                if (editable) {
+                    // Текстовый свободный виджет: ручка сверху для drag, тело — для редактирования.
+                    div.style.pointerEvents = 'none';
+                    var grip = document.createElement('div');
+                    grip.className = 'b-drag-grip';
+                    grip.title = 'Перетащить';
+                    grip.style.left = div.style.left;
+                    grip.style.top = (parseFloat(div.style.top) - 12) + 'px';
+                    grip.style.width = div.style.width;
+                    state.overlayEl.appendChild(grip);
+                    makeFreeDraggable(grip, found);
+                    // Если не выбран — клик по телу идёт в iframe (contenteditable).
+                    if (id !== state.selectedId) {
+                        div.style.pointerEvents = 'auto';
+                        div.addEventListener('mousedown', function (e) { e.preventDefault(); e.stopPropagation(); select(id); });
+                    }
+                } else {
+                    makeFreeDraggable(div, found);
+                }
+            } else if (id === state.selectedId && editable) {
                 div.style.pointerEvents = 'none';
             } else {
                 div.addEventListener('mousedown', function (e) { e.preventDefault(); e.stopPropagation(); select(id); });
-            }
-            // Drag для свободных виджетов.
-            if (found && found.free && found.kind === 'widget') {
-                makeFreeDraggable(div, found);
             }
             state.overlayEl.appendChild(div);
         });
@@ -339,7 +357,6 @@
     // Перетаскивание свободного виджета мышью (в % от секции).
     function makeFreeDraggable(handle, found) {
         handle.addEventListener('mousedown', function (e) {
-            if (found.node.type === 'heading' || found.node.type === 'text') return; // текстовые — по клику в contenteditable
             e.preventDefault();
             e.stopPropagation();
             select(found.node.id);

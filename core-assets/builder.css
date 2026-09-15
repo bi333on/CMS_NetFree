@@ -30,6 +30,18 @@ body.b-dragging { cursor: move; user-select: none; }
 body.b-dragging #bCanvas { pointer-events: none; }
 body.b-dragging .b-hover { cursor: move; }
 
+/* Ручка перетаскивания текстовых свободных виджетов */
+.b-drag-grip {
+    position: absolute;
+    height: 10px;
+    border-radius: 3px;
+    background: var(--b-accent);
+    cursor: move;
+    z-index: 100;
+    opacity: .85;
+}
+.b-drag-grip:hover { opacity: 1; }
+
 /* Шапка */
 .b-topbar {
     height: 56px;
