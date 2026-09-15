@@ -18,7 +18,8 @@ declare(strict_types=1);
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
 
-define('NETFREE_ROOT', dirname(__DIR__));
+// cli-install.php лежит в КОРНЕ проекта, поэтому корень = __DIR__.
+define('NETFREE_ROOT', __DIR__);
 
 // ---------------------------------------------------------------------------
 // Разбор аргументов
