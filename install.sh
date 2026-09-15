@@ -28,9 +28,11 @@ APP_USER="${APP_USER:-www-data}"
 PHP_VERSION="${PHP_VERSION:-8.2}"
 DB_NAME="${DB_NAME:-netfree}"
 DB_USER="${DB_USER:-netfree}"
-DB_PASS="${DB_PASS:-$(openssl rand -base64 18 2>/dev/null || echo "netfree$(date +%s)")}"
+# Пароли без спецсимволов (буквы+цифры) — чтобы не ломались в bash.
+DB_PASS="${DB_PASS:-$(openssl rand -hex 12 2>/dev/null || echo "netfree$(date +%s)")}"
 ADMIN_USER="${ADMIN_USER:-admin}"
-ADMIN_PASS="${ADMIN_PASS:-$(openssl rand -base64 12 2>/dev/null || echo "admin$(date +%s)")}"
+ADMIN_PASS="${ADMIN_PASS:-$(openssl rand -hex 10 2>/dev/null || echo "admin$(date +%s)")}"
+SITE_NAME="${SITE_NAME:-NetFree}"
 
 # Автоопределение домена: первый аргумент скрипта.
 if [ -z "$SITE_DOMAIN" ] && [ $# -ge 1 ]; then
@@ -169,25 +171,48 @@ echo "==> Перезапускаю Caddy"
 systemctl enable caddy 2>/dev/null || true
 systemctl restart caddy 2>/dev/null || caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || true
 
+# ---------------------------------------------------------------------------
+# 7. Автоматическая установка CMS (БД + админ + config/env.php)
+# ---------------------------------------------------------------------------
+echo "==> Устанавливаю CMS (база + администратор)"
+PHP_BIN="$(command -v php || true)"
+if [ -z "$PHP_BIN" ]; then
+    PHP_BIN="php${PHP_VERSION}"
+fi
+
+"$PHP_BIN" "$APP_DIR/cli-install.php" \
+    --db-host="localhost" \
+    --db-port="3306" \
+    --db-name="$DB_NAME" \
+    --db-user="$DB_USER" \
+    --db-pass="$DB_PASS" \
+    --admin-user="$ADMIN_USER" \
+    --admin-pass="$ADMIN_PASS" \
+    --site-name="$SITE_NAME" \
+    --site-url="http://$SITE_DOMAIN" \
+    --timezone="UTC"
+
+INSTALL_OK=$?
+rm -f "$APP_DIR/public/install.php" 2>/dev/null || true
+
 echo ""
 echo "====================================================="
-echo " NetFree установлен."
-echo " Сайт:        http://$SITE_DOMAIN"
-echo " Установка:   http://$SITE_DOMAIN/install.php"
-echo " Каталог:     $APP_DIR"
+echo " NetFree установлен и настроен."
+echo " Сайт:            http://$SITE_DOMAIN"
+echo " Админ-панель:    http://$SITE_DOMAIN/admin"
+echo " Каталог:         $APP_DIR"
 echo ""
-echo " Данные MySQL (введите в форму установки):"
-echo "   Хост:        localhost"
-echo "   Порт:        3306"
-echo "   База:        $DB_NAME"
-echo "   Пользователь:$DB_USER"
-echo "   Пароль:      $DB_PASS"
+echo " Доступ администратора:"
+echo "   Логин:     $ADMIN_USER"
+echo "   Пароль:    $ADMIN_PASS"
 echo ""
-echo " Дальше:"
-echo " 1) Откройте http://$SITE_DOMAIN/install.php в браузере."
-echo " 2) Введите данные MySQL выше + придумайте логин/пароль администратора."
-echo " 3) После установки УДАЛИТЕ: $APP_DIR/public/install.php"
+echo " MySQL:"
+echo "   База:      $DB_NAME"
+echo "   Пользователь: $DB_USER"
+echo "   Пароль:    $DB_PASS"
 echo ""
 echo " Повторный запуск этого скрипта обновит код с GitHub,"
 echo " не затирая config/env.php и загруженные файлы."
 echo "====================================================="
+
+exit $INSTALL_OK
