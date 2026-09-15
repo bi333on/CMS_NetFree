@@ -9,6 +9,40 @@ NetFree — модульная PHP-CMS с архитектурой в стиле
 - Расширения PHP: `pdo`, `pdo_mysql`, `mbstring`, `openssl`, `json`
 - Для установки «одним файлом» дополнительно: `curl`, `zip`
 
+## Установка одной командой (VPS + Caddy)
+
+Для VPS (Ubuntu/Debian) с доменом, направленным на сервер:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/bi333on/CMS_NetFree/master/install.sh | sudo bash -s -- example.com
+```
+
+Скрипт сделает всё автоматически:
+1. Поставит PHP + расширения, Git, Composer.
+2. Установит и настроит Caddy (веб-корень `public/`).
+3. Склонирует репозиторий в `/var/www/netfree`.
+4. Настроит права и Caddyfile под ваш домен.
+5. После этого откройте `http://example.com/install.php` и заполните MySQL + администратора.
+
+**Переменные окружения** (опционально):
+
+| Переменная | По умолчанию | Описание |
+|------------|--------------|----------|
+| `APP_DIR` | `/var/www/netfree` | Куда клонировать CMS |
+| `REPO_URL` | `https://github.com/bi333on/CMS_NetFree.git` | Репозиторий |
+| `BRANCH` | `master` | Ветка |
+| `PHP_VERSION` | `8.2` | Версия PHP |
+
+Пример с настройками:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/bi333on/CMS_NetFree/master/install.sh | sudo bash -s -- example.com
+```
+
+Для приватного репозитория укажите URL с токеном: `REPO_URL=https://TOKEN@github.com/bi333on/CMS_NetFree.git`.
+
+После установки обязательно удалите `public/install.php`.
+
 ## Структура проекта
 
 ```
