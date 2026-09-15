@@ -153,6 +153,12 @@ $SITE_DOMAIN {
         file_server
     }
 
+    # Загруженные медиафайлы (картинки, документы).
+    handle_path /uploads/* {
+        root * $APP_DIR/public
+        file_server
+    }
+
     # Важно: install.php НЕ закрываем — он нужен для первичной установки.
     # После установки файл удаляется, поэтому отдельный deny не требуется.
     @deny path /composer.json /composer.lock /netfree-install.php
