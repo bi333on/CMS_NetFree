@@ -12,6 +12,9 @@ class Renderer
 {
     public static function render(array $doc): string
     {
+        // Применяем фильтр условной видимости
+        $doc = ConditionalVisibility::filterDocument($doc);
+
         $html = '';
         foreach (($doc['sections'] ?? []) as $section) {
             $html .= self::renderSection($section);

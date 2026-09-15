@@ -5,12 +5,24 @@ $adminTitle = 'Конструктор — NetFree';
 // Ассеты инлайним: на некоторых хостингах статика через /nf-assets не проксируется в PHP.
 $builderCss = '';
 $builderJs  = '';
+$builderEnhancementsJs = '';
+$builderPerformanceJs = '';
+$builderAnimationsJs = '';
 $coreAssets = dirname(__DIR__, 2) . '/core-assets';
 if (is_file($coreAssets . '/builder.css')) {
     $builderCss = (string) file_get_contents($coreAssets . '/builder.css');
 }
 if (is_file($coreAssets . '/builder.js')) {
     $builderJs = (string) file_get_contents($coreAssets . '/builder.js');
+}
+if (is_file($coreAssets . '/builder-enhancements.js')) {
+    $builderEnhancementsJs = (string) file_get_contents($coreAssets . '/builder-enhancements.js');
+}
+if (is_file($coreAssets . '/builder-performance.js')) {
+    $builderPerformanceJs = (string) file_get_contents($coreAssets . '/builder-performance.js');
+}
+if (is_file($coreAssets . '/builder-animations.js')) {
+    $builderAnimationsJs = (string) file_get_contents($coreAssets . '/builder-animations.js');
 }
 
 // Конфиг для JS встраиваем через JSON.parse: экранируем <, >, &, чтобы ни один символ
@@ -101,5 +113,14 @@ $configJson = str_replace(['<', '>', '&'], ['\u003c', '\u003e', '\u0026'], (stri
 window.NF_BUILDER_CONFIG = JSON.parse(<?= json_encode($configJson) ?>);
 </script>
 <script><?= $builderJs ?></script>
+<?php if ($builderEnhancementsJs !== ''): ?>
+<script><?= $builderEnhancementsJs ?></script>
+<?php endif; ?>
+<?php if ($builderPerformanceJs !== ''): ?>
+<script><?= $builderPerformanceJs ?></script>
+<?php endif; ?>
+<?php if ($builderAnimationsJs !== ''): ?>
+<script><?= $builderAnimationsJs ?></script>
+<?php endif; ?>
 </body>
 </html>

@@ -178,3 +178,188 @@
     color: inherit;
 }
 .nf-form .nf-btn { justify-self: start; border: none; cursor: pointer; }
+
+/* Карточка */
+.nf-card {
+    border: 1px solid var(--nf-border, #e2e8f0);
+    border-radius: 14px;
+    overflow: hidden;
+    background: #fff;
+    transition: box-shadow 0.2s, transform 0.2s;
+}
+.nf-card:hover {
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+.nf-card-img {
+    width: 100%;
+    overflow: hidden;
+}
+.nf-card-img img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 0;
+}
+.nf-card-body {
+    padding: 20px;
+}
+.nf-card-title {
+    margin: 0 0 10px;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1e293b;
+}
+.nf-card-text {
+    color: #64748b;
+    margin-bottom: 16px;
+    line-height: 1.6;
+}
+
+/* Иконка */
+.nf-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+/* Прогресс-бар */
+.nf-progress {
+    width: 100%;
+}
+.nf-progress-label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    font-weight: 500;
+    color: #334155;
+}
+.nf-progress-bar {
+    width: 100%;
+    background: #e2e8f0;
+    border-radius: 999px;
+    overflow: hidden;
+}
+.nf-progress-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.8s ease;
+}
+
+/* Счётчик */
+.nf-counter {
+    text-align: center;
+}
+.nf-counter-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--nf-accent, #2563eb);
+    line-height: 1.2;
+}
+.nf-counter-label {
+    margin-top: 8px;
+    color: #64748b;
+    font-size: 1rem;
+}
+
+/* Таймлайн */
+.nf-timeline {
+    position: relative;
+    padding-left: 40px;
+}
+.nf-timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--nf-border, #e2e8f0);
+}
+.nf-timeline-item {
+    position: relative;
+    margin-bottom: 32px;
+}
+.nf-timeline-marker {
+    position: absolute;
+    left: -29px;
+    top: 4px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--nf-accent, #2563eb);
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 2px var(--nf-accent, #2563eb);
+}
+.nf-timeline-year {
+    font-weight: 700;
+    color: var(--nf-accent, #2563eb);
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+}
+.nf-timeline-title {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #1e293b;
+    margin-bottom: 4px;
+}
+.nf-timeline-desc {
+    color: #64748b;
+    line-height: 1.6;
+}
+
+/* Карта */
+.nf-map iframe {
+    width: 100%;
+    border: 0;
+    border-radius: 12px;
+}
+
+/* Социальные кнопки */
+.nf-social {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.nf-social-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.nf-social-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+.nf-social-facebook { background: #1877f2; }
+.nf-social-twitter { background: #000; }
+.nf-social-instagram { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
+.nf-social-linkedin { background: #0a66c2; }
+.nf-social-youtube { background: #ff0000; }
+
+/* Код */
+.nf-code {
+    background: #1e293b;
+    border-radius: 12px;
+    padding: 20px;
+    overflow-x: auto;
+}
+.nf-code-pre {
+    margin: 0;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.6;
+}
+.nf-code-pre code {
+    color: #e2e8f0;
+    display: block;
+    white-space: pre;
+}

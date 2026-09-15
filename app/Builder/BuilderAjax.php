@@ -308,6 +308,39 @@ class BuilderAjax
         ];
     }
 
+    /**
+     * Каталог готовых шаблонов секций.
+     */
+    public function templates(Application $app): Response
+    {
+        if (!is_logged_in()) {
+            return (new Response())->json(['error' => 'Unauthorized'], 401);
+        }
+
+        return (new Response())->json([
+            'templates' => json_decode(TemplateLibrary::catalogJson(), true),
+        ]);
+    }
+
+    /**
+     * Получить полный документ шаблона по ключу.
+     */
+    public function template(Application $app, string $key): Response
+    {
+        if (!is_logged_in()) {
+            return (new Response())->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $template = TemplateLibrary::get($key);
+        if (!$template) {
+            return (new Response())->json(['error' => 'Template not found'], 404);
+        }
+
+        return (new Response())->json([
+            'template' => $template,
+        ]);
+    }
+
     protected function csrfOk(Application $app, array $data): bool
     {
         $token = (string) ($app->request->header('X-CSRF-Token') ?? '');

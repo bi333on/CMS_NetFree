@@ -449,5 +449,252 @@ class BlockRegistry
                 return '<div ' . Renderer::attrs($node, 'nf-widget nf-form') . '>' . $html . '</div>';
             },
         ]);
+
+        $this->register('card', [
+            'label'    => 'Карточка',
+            'category' => 'Контент',
+            'icon'     => '<svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M4 4h16v16H4V4zm2 2v5h12V6H6zm0 7v5h12v-5H6z"/></svg>',
+            'fields'   => [
+                'image'    => ['type' => 'url', 'label' => 'Изображение', 'default' => ''],
+                'title'    => ['type' => 'text', 'label' => 'Заголовок', 'default' => 'Заголовок карточки'],
+                'text'     => ['type' => 'richtext', 'label' => 'Текст', 'default' => '<p>Описание карточки. Расскажите о продукте или услуге.</p>'],
+                'btnText'  => ['type' => 'text', 'label' => 'Текст кнопки', 'default' => 'Подробнее'],
+                'btnUrl'   => ['type' => 'url', 'label' => 'Ссылка', 'default' => '#'],
+            ],
+            'design'   => ['spacing', 'typography'],
+            'render'   => function (array $d, array $node): string {
+                $html = '';
+                $img = (string) ($d['image'] ?? '');
+                if ($img !== '') {
+                    $html .= '<div class="nf-card-img"><img src="' . e($img) . '" alt="' . e((string) ($d['title'] ?? '')) . '" loading="lazy"></div>';
+                }
+                $html .= '<div class="nf-card-body">';
+                $title = trim((string) ($d['title'] ?? ''));
+                if ($title !== '') {
+                    $html .= '<h3 class="nf-card-title">' . e($title) . '</h3>';
+                }
+                $text = (string) ($d['text'] ?? '');
+                if ($text !== '') {
+                    $html .= '<div class="nf-card-text">' . $text . '</div>';
+                }
+                $btnText = trim((string) ($d['btnText'] ?? ''));
+                $btnUrl = (string) ($d['btnUrl'] ?? '');
+                if ($btnText !== '' && $btnUrl !== '') {
+                    $html .= '<a class="nf-btn" href="' . e($btnUrl) . '">' . e($btnText) . '</a>';
+                }
+                $html .= '</div>';
+                return '<div ' . Renderer::attrs($node, 'nf-widget nf-card') . '>' . $html . '</div>';
+            },
+        ]);
+
+        $this->register('icon', [
+            'label'    => 'Иконка',
+            'category' => 'Контент',
+            'icon'     => '<svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/></svg>',
+            'fields'   => [
+                'icon' => ['type' => 'select', 'label' => 'Иконка',
+                           'options' => [
+                               'check' => '✓ Галочка',
+                               'star' => '★ Звезда',
+                               'heart' => '♥ Сердце',
+                               'info' => 'ℹ Информация',
+                               'warning' => '⚠ Предупреждение',
+                               'phone' => '📞 Телефон',
+                               'email' => '✉ Email',
+                               'location' => '📍 Локация',
+                           ],
+                           'default' => 'check'],
+                'size' => ['type' => 'number', 'label' => 'Размер, px', 'default' => 48],
+                'color' => ['type' => 'text', 'label' => 'Цвет', 'default' => '#3b82f6'],
+            ],
+            'design'   => ['spacing', 'align'],
+            'render'   => function (array $d, array $node): string {
+                $icons = [
+                    'check' => '✓',
+                    'star' => '★',
+                    'heart' => '♥',
+                    'info' => 'ℹ',
+                    'warning' => '⚠',
+                    'phone' => '📞',
+                    'email' => '✉',
+                    'location' => '📍',
+                ];
+                $icon = (string) ($d['icon'] ?? 'check');
+                $size = max(16, (int) ($d['size'] ?? 48));
+                $color = (string) ($d['color'] ?? '#3b82f6');
+                $symbol = $icons[$icon] ?? $icons['check'];
+                return '<div ' . Renderer::attrs($node, 'nf-widget nf-icon') . ' style="font-size:' . $size . 'px;color:' . e($color) . ';">' . e($symbol) . '</div>';
+            },
+        ]);
+
+        $this->register('progress', [
+            'label'    => 'Прогресс-бар',
+            'category' => 'Контент',
+            'icon'     => '<svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M4 6h16v4H4V6zm0 8h12v4H4v-4z"/></svg>',
+            'fields'   => [
+                'label'   => ['type' => 'text', 'label' => 'Название', 'default' => 'Навык'],
+                'value'   => ['type' => 'number', 'label' => 'Значение (%)', 'default' => 75],
+                'color'   => ['type' => 'text', 'label' => 'Цвет', 'default' => '#3b82f6'],
+                'height'  => ['type' => 'number', 'label' => 'Высота, px', 'default' => 24],
+            ],
+            'design'   => ['spacing'],
+            'render'   => function (array $d, array $node): string {
+                $label = trim((string) ($d['label'] ?? ''));
+                $value = max(0, min(100, (int) ($d['value'] ?? 75)));
+                $color = (string) ($d['color'] ?? '#3b82f6');
+                $height = max(8, (int) ($d['height'] ?? 24));
+                $html = '';
+                if ($label !== '') {
+                    $html .= '<div class="nf-progress-label">' . e($label) . ' <span>' . $value . '%</span></div>';
+                }
+                $html .= '<div class="nf-progress-bar" style="height:' . $height . 'px;">'
+                    . '<div class="nf-progress-fill" style="width:' . $value . '%;background-color:' . e($color) . ';"></div>'
+                    . '</div>';
+                return '<div ' . Renderer::attrs($node, 'nf-widget nf-progress') . '>' . $html . '</div>';
+            },
+        ]);
+
+        $this->register('counter', [
+            'label'    => 'Счётчик',
+            'category' => 'Контент',
+            'icon'     => '<svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>',
+            'fields'   => [
+                'number' => ['type' => 'number', 'label' => 'Число', 'default' => 1000],
+                'label'  => ['type' => 'text', 'label' => 'Подпись', 'default' => 'Клиентов'],
+                'prefix' => ['type' => 'text', 'label' => 'Префикс', 'default' => ''],
+                'suffix' => ['type' => 'text', 'label' => 'Суффикс', 'default' => '+'],
+            ],
+            'design'   => ['typography', 'spacing', 'align'],
+            'render'   => function (array $d, array $node): string {
+                $number = (int) ($d['number'] ?? 1000);
+                $label = trim((string) ($d['label'] ?? ''));
+                $prefix = (string) ($d['prefix'] ?? '');
+                $suffix = (string) ($d['suffix'] ?? '');
+                $html = '<div class="nf-counter-number">' . e($prefix) . number_format($number, 0, ',', ' ') . e($suffix) . '</div>';
+                if ($label !== '') {
+                    $html .= '<div class="nf-counter-label">' . e($label) . '</div>';
+                }
+                return '<div ' . Renderer::attrs($node, 'nf-widget nf-counter') . '>' . $html . '</div>';
+            },
+        ]);
+
+        $this->register('timeline', [
+            'label'    => 'Таймлайн',
+            'category' => 'Расширенное',
+            'icon'     => '<svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M9 3v2H4v2h5v2H4v2h5v2H4v2h5v2H4v2h16V3H9zm11 16h-9V5h9v14z"/></svg>',
+            'fields'   => [
+                'items' => ['type' => 'textarea', 'label' => 'События: «Год || Заголовок || Описание» (по строке)', 'default' => "2020 || Основание || Начало пути\n2022 || Рост || Расширение команды\n2024 || Успех || Достижение целей"],
+            ],
+            'design'   => ['spacing'],
+            'render'   => function (array $d, array $node): string {
+                $lines = preg_split('/\r\n|\r|\n/', (string) ($d['items'] ?? ''));
+                $lines = array_values(array_filter(array_map('trim', (array) $lines)));
+                if (!$lines) {
+                    return '';
+                }
+                $html = '';
+                foreach ($lines as $line) {
+                    $parts = explode('||', $line, 3);
+                    $year = trim($parts[0] ?? '');
+                    $title = trim($parts[1] ?? '');
+                    $desc = trim($parts[2] ?? '');
+                    $html .= '<div class="nf-timeline-item">'
+                        . '<div class="nf-timeline-marker"></div>'
+                        . '<div class="nf-timeline-content">'
+                        . '<div class="nf-timeline-year">' . e($year) . '</div>'
+                        . '<div class="nf-timeline-title">' . e($title) . '</div>'
+                        . '<div class="nf-timeline-desc">' . e($desc) . '</div>'
+                        . '</div></div>';
+                }
+                return '<div ' . Renderer::attrs($node, 'nf-widget nf-timeline') . '>' . $html . '</div>';
+            },
+        ]);
+
+        $this->register('map', [
+            'label'    => 'Карта',
+            'category' => 'Расширенное',
+            'icon'     => '<svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>',
+            'fields'   => [
+                'lat'    => ['type' => 'text', 'label' => 'Широта', 'default' => '55.7558'],
+                'lng'    => ['type' => 'text', 'label' => 'Долгота', 'default' => '37.6173'],
+                'zoom'   => ['type' => 'number', 'label' => 'Масштаб', 'default' => 12],
+                'height' => ['type' => 'number', 'label' => 'Высота, px', 'default' => 400],
+            ],
+            'design'   => ['spacing'],
+            'render'   => function (array $d, array $node): string {
+                $lat = (string) ($d['lat'] ?? '55.7558');
+                $lng = (string) ($d['lng'] ?? '37.6173');
+                $zoom = max(1, (int) ($d['zoom'] ?? 12));
+                $height = max(200, (int) ($d['height'] ?? 400));
+                // OpenStreetMap embed
+                $html = '<iframe width="100%" height="' . $height . '" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" '
+                    . 'src="https://www.openstreetmap.org/export/embed.html?bbox='
+                    . ((float)$lng - 0.05) . '%2C' . ((float)$lat - 0.05) . '%2C'
+                    . ((float)$lng + 0.05) . '%2C' . ((float)$lat + 0.05)
+                    . '&amp;layer=mapnik&amp;marker=' . e($lat) . '%2C' . e($lng) . '">'
+                    . '</iframe>';
+                return '<div ' . Renderer::attrs($node, 'nf-widget nf-map') . '>' . $html . '</div>';
+            },
+        ]);
+
+        $this->register('social', [
+            'label'    => 'Социальные кнопки',
+            'category' => 'Контент',
+            'icon'     => '<svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>',
+            'fields'   => [
+                'facebook'  => ['type' => 'url', 'label' => 'Facebook', 'default' => ''],
+                'twitter'   => ['type' => 'url', 'label' => 'Twitter/X', 'default' => ''],
+                'instagram' => ['type' => 'url', 'label' => 'Instagram', 'default' => ''],
+                'linkedin'  => ['type' => 'url', 'label' => 'LinkedIn', 'default' => ''],
+                'youtube'   => ['type' => 'url', 'label' => 'YouTube', 'default' => ''],
+            ],
+            'design'   => ['spacing', 'align'],
+            'render'   => function (array $d, array $node): string {
+                $networks = [
+                    'facebook'  => ['Fa', 'Facebook'],
+                    'twitter'   => ['𝕏', 'Twitter'],
+                    'instagram' => ['In', 'Instagram'],
+                    'linkedin'  => ['Li', 'LinkedIn'],
+                    'youtube'   => ['Yt', 'YouTube'],
+                ];
+                $html = '';
+                foreach ($networks as $key => $info) {
+                    $url = trim((string) ($d[$key] ?? ''));
+                    if ($url !== '') {
+                        $html .= '<a class="nf-social-btn nf-social-' . $key . '" href="' . e($url) . '" target="_blank" rel="noopener" aria-label="' . $info[1] . '">'
+                            . $info[0]
+                            . '</a>';
+                    }
+                }
+                return $html !== '' ? '<div ' . Renderer::attrs($node, 'nf-widget nf-social') . '>' . $html . '</div>' : '';
+            },
+        ]);
+
+        $this->register('code', [
+            'label'    => 'Код',
+            'category' => 'Расширенное',
+            'icon'     => '<svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>',
+            'fields'   => [
+                'code'     => ['type' => 'html', 'label' => 'Код', 'default' => 'function hello() {\n  console.log("Hello, World!");\n}'],
+                'language' => ['type' => 'select', 'label' => 'Язык',
+                               'options' => [
+                                   'javascript' => 'JavaScript',
+                                   'php' => 'PHP',
+                                   'python' => 'Python',
+                                   'html' => 'HTML',
+                                   'css' => 'CSS',
+                                   'bash' => 'Bash',
+                               ],
+                               'default' => 'javascript'],
+            ],
+            'design'   => ['spacing'],
+            'render'   => function (array $d, array $node): string {
+                $code = (string) ($d['code'] ?? '');
+                $lang = (string) ($d['language'] ?? 'javascript');
+                return '<div ' . Renderer::attrs($node, 'nf-widget nf-code') . '>'
+                    . '<pre class="nf-code-pre language-' . e($lang) . '"><code>' . e($code) . '</code></pre>'
+                    . '</div>';
+            },
+        ]);
     }
 }

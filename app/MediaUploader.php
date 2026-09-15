@@ -59,23 +59,53 @@ class MediaUploader
             throw new RuntimeException('Содержимое файла не соответствует типу. Отказано в загрузке.');
         }
 
-        // Случайное имя файла — защита от path traversal и подмены расширения.
-        $filename = bin2hex(random_bytes(16)) . '.' . $ext;
-
         $uploadsDir = Application::getInstance()->basePath . '/public/uploads';
         if (!is_dir($uploadsDir)) {
             @mkdir($uploadsDir, 0755, true);
         }
 
+        // Используем MediaProcessor для изображений
+        $isImage = str_starts_with($detected, 'image/') && $detected !== self::SVG_MIME;
+
+        if ($isImage && SettingsRepository::get('media_optimize', '1') === '1') {
+            $processor = new MediaProcessor($uploadsDir);
+            $processed = $processor->process($file);
+
+            $id = \NetFree\Content\MediaRepository::create([
+                'filename'      => $processed['filename'],
+                'original_name' => $original,
+                'mime'          => $detected,
+                'size'          => $size,
+                'alt'           => '',
+                'title'         => '',
+                'width'         => $processed['width'],
+                'height'        => $processed['height'],
+            ]);
+
+            return [
+                'id'        => $id,
+                'url'       => $processed['url'],
+                'webp_url'  => $processed['webp_url'] ?? null,
+                'thumb_url' => $processed['thumb_url'] ?? null,
+                'name'      => $original,
+                'mime'      => $detected,
+                'width'     => $processed['width'],
+                'height'    => $processed['height'],
+            ];
+        }
+
+        // Без обработки (PDF, SVG или отключена оптимизация)
+        $filename = bin2hex(random_bytes(16)) . '.' . $ext;
         $dest = $uploadsDir . '/' . $filename;
+
         if (!move_uploaded_file($file['tmp_name'], $dest)) {
             throw new RuntimeException('Не удалось сохранить файл. Проверьте права на public/uploads.');
         }
 
-        // Размеры растровых изображений (SVG/PDF не имеют).
+        // Размеры растровых изображений
         $width = null;
         $height = null;
-        if (str_starts_with($detected, 'image/') && $detected !== self::SVG_MIME) {
+        if ($isImage) {
             $info = @getimagesize($dest);
             if (is_array($info) && isset($info[0], $info[1])) {
                 $width  = (int) $info[0];
