@@ -341,22 +341,13 @@
             var editable = found && found.kind === 'widget' && (found.node.type === 'heading' || found.node.type === 'text');
 
             if (found && found.free && found.kind === 'widget') {
-                // Свободные виджеты: перетаскивание.
+                // Свободные виджеты: перетаскивание за ручку в тулбаре (✥).
                 if (editable) {
-                    // Текстовый свободный виджет: ручка сверху для drag, тело — для редактирования.
-                    div.style.pointerEvents = 'none';
-                    var grip = document.createElement('div');
-                    grip.className = 'b-drag-grip';
-                    grip.title = 'Перетащить';
-                    grip.style.left = div.style.left;
-                    grip.style.top = (parseFloat(div.style.top) - 12) + 'px';
-                    grip.style.width = div.style.width;
-                    state.overlayEl.appendChild(grip);
-                    makeFreeDraggable(grip, found);
-                    // Если не выбран — клик по телу идёт в iframe (contenteditable).
+                    // Текстовый виджет: клики по телу уходят в iframe (contenteditable).
                     if (id !== state.selectedId) {
-                        div.style.pointerEvents = 'auto';
                         div.addEventListener('mousedown', function (e) { e.preventDefault(); e.stopPropagation(); select(id); });
+                    } else {
+                        div.style.pointerEvents = 'none';
                     }
                 } else {
                     makeFreeDraggable(div, found);
@@ -423,7 +414,7 @@
         var bar = document.createElement('div');
         bar.className = 'b-toolbar';
         bar.style.left = hover.style.left;
-        bar.style.top = (parseFloat(hover.style.top) - 34) + 'px';
+        bar.style.top = (parseFloat(hover.style.top) - 40) + 'px';
 
         function btn(text, title, fn) {
             var b = document.createElement('button');
@@ -433,6 +424,33 @@
             b.addEventListener('mousedown', function (e) { e.preventDefault(); e.stopPropagation(); });
             b.addEventListener('click', function (e) { e.stopPropagation(); fn(); });
             bar.appendChild(b);
+        }
+
+        // Название блока на чёрной панели.
+        var label = document.createElement('span');
+        label.className = 'b-toolbar-label';
+        if (sel.kind === 'widget') {
+            label.textContent = (state.blocks[sel.node.type] && state.blocks[sel.node.type].label) || sel.node.type;
+        } else if (sel.kind === 'column') {
+            label.textContent = 'Колонка';
+        } else if (sel.node.type === 'free') {
+            label.textContent = 'Свободная секция';
+        } else {
+            label.textContent = 'Секция';
+        }
+        bar.appendChild(label);
+
+        // Крестик-ручка перетаскивания (drag handle).
+        var grip = document.createElement('button');
+        grip.type = 'button';
+        grip.className = 'b-toolbar-grip';
+        grip.textContent = '✥';
+        grip.title = 'Перетащить';
+        bar.appendChild(grip);
+        if (sel.free && sel.kind === 'widget') {
+            makeFreeDraggable(grip, sel);
+        } else if (sel.kind === 'section') {
+            grip.addEventListener('mousedown', function (e) { e.preventDefault(); e.stopPropagation(); });
         }
 
         btn('↑', 'Выше', function () { moveNode(state.selectedId, -1); });

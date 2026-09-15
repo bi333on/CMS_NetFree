@@ -210,12 +210,31 @@ body.b-dragging .b-hover { cursor: move; }
 .b-toolbar {
     position: absolute;
     display: flex;
+    align-items: center;
     gap: 2px;
     background: #0f172a;
     border-radius: 6px;
     padding: 3px;
     pointer-events: auto;
 }
+.b-toolbar-label {
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 0 8px;
+    white-space: nowrap;
+}
+.b-toolbar-grip {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: move;
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+    line-height: 1;
+}
+.b-toolbar-grip:hover { background: #334155; color: #fff; }
 .b-toolbar button {
     background: none;
     border: none;

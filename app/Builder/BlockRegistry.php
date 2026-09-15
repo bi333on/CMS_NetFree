@@ -110,7 +110,7 @@ class BlockRegistry
             'category' => 'Контент',
             'icon'     => '<svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M5 4h14v2H5V4zm0 5h14v2H5V9zm0 5h10v2H5v-2zm0 5h14v2H5v-2z"/></svg>',
             'fields'   => [
-                'text' => ['type' => 'richtext', 'label' => 'Текст', 'default' => ''],
+                'text' => ['type' => 'richtext', 'label' => 'Текст', 'default' => '<p>Текст абзаца. Нажмите, чтобы отредактировать.</p>'],
             ],
             'design'   => ['typography', 'spacing', 'align'],
             'render'   => function (array $d, array $node): string {
@@ -214,7 +214,7 @@ class BlockRegistry
             'category' => 'Расширенное',
             'icon'     => '<svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M8 6L2 12l6 6 1.4-1.4L4.8 12l4.6-4.6L8 6zm8 0l-1.4 1.4L19.2 12l-4.6 4.6L16 18l6-6-6-6z"/></svg>',
             'fields'   => [
-                'html' => ['type' => 'html', 'label' => 'HTML', 'default' => ''],
+                'html' => ['type' => 'html', 'label' => 'HTML', 'default' => '<p>Произвольный HTML-код</p>'],
             ],
             'design'   => ['spacing'],
             'render'   => function (array $d, array $node): string {
@@ -227,7 +227,7 @@ class BlockRegistry
             'category' => 'Контент',
             'icon'     => '<svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M4 5h2v2H4V5zm4 0h12v2H8V5zM4 11h2v2H4v-2zm4 0h12v2H8v-2zm-4 6h2v2H4v-2zm4 0h12v2H8v-2z"/></svg>',
             'fields'   => [
-                'html' => ['type' => 'html', 'label' => 'HTML списка', 'default' => ''],
+                'html' => ['type' => 'html', 'label' => 'HTML списка', 'default' => '<ul><li>Первый пункт</li><li>Второй пункт</li><li>Третий пункт</li></ul>'],
             ],
             'design'   => ['typography', 'spacing'],
             'render'   => function (array $d, array $node): string {
@@ -240,7 +240,7 @@ class BlockRegistry
             'category' => 'Контент',
             'icon'     => '<svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M6 17h3l2-4V7H5v6h3l-2 4zm8 0h3l2-4V7h-6v6h3l-2 4z"/></svg>',
             'fields'   => [
-                'text' => ['type' => 'richtext', 'label' => 'Текст цитаты', 'default' => ''],
+                'text' => ['type' => 'richtext', 'label' => 'Текст цитаты', 'default' => 'Мудрая мысль, которую стоит процитировать.'],
                 'cite' => ['type' => 'text', 'label' => 'Источник', 'default' => ''],
             ],
             'design'   => ['typography', 'spacing'],
@@ -306,7 +306,7 @@ class BlockRegistry
             'category' => 'Расширенное',
             'icon'     => '<svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M4 5h16v2H4V5zm0 5h16v2H4v-2zm0 5h16v2H4v-2zm0 5h10v2H4v-2z"/></svg>',
             'fields'   => [
-                'items' => ['type' => 'textarea', 'label' => 'Пункты: «Заголовок || Текст» (по строке)', 'default' => ''],
+                'items' => ['type' => 'textarea', 'label' => 'Пункты: «Заголовок || Текст» (по строке)', 'default' => "Первый пункт || Содержимое первого пункта\nВторой пункт || Содержимое второго пункта"],
             ],
             'design'   => ['spacing'],
             'render'   => function (array $d, array $node): string {
@@ -334,7 +334,7 @@ class BlockRegistry
             'category' => 'Расширенное',
             'icon'     => '<svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z"/></svg>',
             'fields'   => [
-                'items' => ['type' => 'textarea', 'label' => 'Вкладки: «Заголовок || Текст» (по строке)', 'default' => ''],
+                'items' => ['type' => 'textarea', 'label' => 'Вкладки: «Заголовок || Текст» (по строке)', 'default' => "Вкладка 1 || Содержимое первой вкладки\nВкладка 2 || Содержимое второй вкладки"],
             ],
             'design'   => ['spacing'],
             'render'   => function (array $d, array $node): string {
@@ -394,8 +394,8 @@ class BlockRegistry
             'category' => 'Расширенное',
             'icon'     => '<svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>',
             'fields'   => [
-                'title'      => ['type' => 'text', 'label' => 'Заголовок', 'default' => ''],
-                'text'       => ['type' => 'richtext', 'label' => 'Текст', 'default' => ''],
+                'title'      => ['type' => 'text', 'label' => 'Заголовок', 'default' => 'Призыв к действию'],
+                'text'       => ['type' => 'richtext', 'label' => 'Текст', 'default' => '<p>Краткое описание предложения.</p>'],
                 'buttonText' => ['type' => 'text', 'label' => 'Текст кнопки', 'default' => 'Подробнее'],
                 'buttonUrl'  => ['type' => 'url', 'label' => 'Ссылка кнопки', 'default' => '#'],
             ],
