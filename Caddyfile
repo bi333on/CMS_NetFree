@@ -18,8 +18,10 @@ example.com {
         file_server
     }
 
-    # Явно запрещаем доступ к скрытым и системным файлам.
-    @deny path /install.php /composer.json /composer.lock
+    # Закрываем доступ к системным файлам.
+    # install.php намеренно НЕ закрыт — он нужен для первичной установки
+    # (после установки файл удаляется вручную).
+    @deny path /composer.json /composer.lock /netfree-install.php
     respond @deny 404
 
     log {
