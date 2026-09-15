@@ -358,8 +358,55 @@
                 div.addEventListener('mousedown', function (e) { e.preventDefault(); e.stopPropagation(); select(id); });
             }
             state.overlayEl.appendChild(div);
+
+            // Ручка растягивания свободной секции (внизу).
+            if (found && found.kind === 'section' && found.node.type === 'free') {
+                var resize = document.createElement('div');
+                resize.className = 'b-resize-handle';
+                resize.title = 'Растянуть секцию';
+                resize.style.left = div.style.left;
+                resize.style.width = div.style.width;
+                resize.style.top = (parseFloat(div.style.top) + parseFloat(div.style.height) - 4) + 'px';
+                state.overlayEl.appendChild(resize);
+                makeFreeSectionResizable(resize, found);
+            }
         });
         renderToolbar();
+    }
+
+    // Растягивание свободной секции за нижнюю ручку (в px).
+    function makeFreeSectionResizable(handle, found) {
+        handle.addEventListener('mousedown', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            select(found.node.id);
+
+            var startY = e.clientY;
+            var sectionEl = doc() && doc().getElementById('nf-' + found.node.id);
+            if (!sectionEl) return;
+            var origH = sectionEl.getBoundingClientRect().height;
+
+            state.iframe.style.pointerEvents = 'none';
+            document.body.classList.add('b-resizing');
+
+            function onMove(ev) {
+                var nh = Math.max(40, Math.round(origH + (ev.clientY - startY)));
+                found.node.settings.height = nh;
+                delete found.node.settings.minHeight;
+                refreshLiveCss();
+            }
+            function onUp() {
+                state.iframe.style.pointerEvents = '';
+                document.body.classList.remove('b-resizing');
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onUp);
+                pushHistory();
+                refreshOverlays();
+            }
+
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+        });
     }
 
     // Перетаскивание свободного виджета мышью (в % от секции).

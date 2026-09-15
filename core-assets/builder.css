@@ -43,6 +43,21 @@ body.b-dragging .b-hover { cursor: move; }
 }
 .b-drag-grip:hover { opacity: 1; }
 
+/* Ручка растягивания свободной секции */
+.b-resize-handle {
+    position: absolute;
+    height: 8px;
+    border-radius: 4px;
+    background: var(--b-accent);
+    cursor: ns-resize;
+    z-index: 100;
+    opacity: .85;
+    pointer-events: auto;
+}
+.b-resize-handle:hover { opacity: 1; }
+body.b-resizing { cursor: ns-resize; user-select: none; }
+body.b-resizing #bCanvas { pointer-events: none; }
+
 /* Шапка */
 .b-topbar {
     height: 56px;
