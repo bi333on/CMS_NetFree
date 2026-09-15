@@ -189,7 +189,7 @@ fi
     --admin-user="$ADMIN_USER" \
     --admin-pass="$ADMIN_PASS" \
     --site-name="$SITE_NAME" \
-    --site-url="http://$SITE_DOMAIN" \
+    --site-url="https://$SITE_DOMAIN" \
     --timezone="UTC"
 
 INSTALL_OK=$?
@@ -198,8 +198,8 @@ rm -f "$APP_DIR/public/install.php" 2>/dev/null || true
 echo ""
 echo "====================================================="
 echo " NetFree установлен и настроен."
-echo " Сайт:            http://$SITE_DOMAIN"
-echo " Админ-панель:    http://$SITE_DOMAIN/admin"
+echo " Сайт:            https://$SITE_DOMAIN"
+echo " Админ-панель:    https://$SITE_DOMAIN/admin"
 echo " Каталог:         $APP_DIR"
 echo ""
 echo " Доступ администратора:"
