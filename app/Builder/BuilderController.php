@@ -116,6 +116,10 @@ class BuilderController
             return (new Response())->setStatus(404)->setBody('Not found');
         }
 
+        // Токен одноразовый: удаляем сразу после валидации, чтобы повторный
+        // запрос (в т.ч. с переданным через Referer/логи) был бесполезен.
+        Database::execute('DELETE FROM preview_tokens WHERE token = ?', [$token]);
+
         // Исходная запись без хуков (чтобы Builder::prepareEntity не перерисовывал).
         $entity = $type === 'page'
             ? Database::first('SELECT * FROM pages WHERE id = ?', [$id])

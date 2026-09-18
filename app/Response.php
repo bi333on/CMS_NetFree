@@ -7,7 +7,17 @@ namespace NetFree;
 class Response
 {
     protected int $status = 200;
-    protected array $headers = ['Content-Type' => 'text/html; charset=utf-8'];
+
+    /**
+     * Заголовки по умолчанию. X-Frame-Options: SAMEORIGIN не мешает iframe-холсту
+     * конструктора (он загружается с того же origin) и защищает от clickjacking.
+     */
+    protected array $headers = [
+        'Content-Type'           => 'text/html; charset=utf-8',
+        'X-Content-Type-Options' => 'nosniff',
+        'X-Frame-Options'        => 'SAMEORIGIN',
+        'Referrer-Policy'        => 'same-origin',
+    ];
     protected string $body = '';
 
     public function setStatus(int $code): static

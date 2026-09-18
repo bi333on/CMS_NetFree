@@ -39,4 +39,29 @@ class RateLimiter
         ]);
         return false;
     }
+
+    /**
+     * Сколько секунд осталось до снятия блокировки (по самой старой записи в окне).
+     */
+    public static function blockedSeconds(string $bucket, int $window): int
+    {
+        $row = Database::first(
+            'SELECT MIN(created_at) AS oldest FROM api_rate_limits WHERE bucket = ?',
+            [$bucket]
+        );
+        if (!$row || empty($row['oldest'])) {
+            return 0;
+        }
+        $oldest = strtotime((string) $row['oldest']);
+        $expire = ($oldest ?: time()) + $window;
+        return max(0, $expire - time());
+    }
+
+    /**
+     * Сбрасывает счётчик (например, после успешного входа).
+     */
+    public static function clear(string $bucket): void
+    {
+        Database::execute('DELETE FROM api_rate_limits WHERE bucket = ?', [$bucket]);
+    }
 }

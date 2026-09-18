@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace NetFree;
 
+use NetFree\Api\RateLimiter;
 use NetFree\Content\CategoryRepository;
 use NetFree\Content\MediaRepository;
 use NetFree\Content\PageRepository;
@@ -24,32 +25,28 @@ class AdminController
                 return $resp->setStatus(403)->setBody('CSRF token mismatch');
             }
 
-            // Rate-limit попыток входа (по IP + логин).
-            $key = 'login:' . ($_SERVER['REMOTE_ADDR'] ?? 'unknown') . ':' . md5((string) $app->request->input('username', ''));
-            $attempts = (int) Session::get('login_attempts_' . $key, 0);
-            $blockedUntil = (int) Session::get('login_blocked_' . $key, 0);
-            if ($blockedUntil && time() < $blockedUntil) {
-                $error = 'Слишком много попыток. Подождите ' . ($blockedUntil - time()) . ' сек.';
+            // Rate-limit попыток входа в БД (по IP + логин). Сессия не используется —
+            // иначе атакующий обходил бы блокировку, не отправляя cookie.
+            $username = (string) $app->request->input('username', '');
+            $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+            $bucket = 'login:' . $ip . ':' . md5($username);
+            $limit = 5;
+            $window = 300; // окно 5 минут
+
+            if (RateLimiter::tooMany($bucket, $limit, $window)) {
+                $secs = RateLimiter::blockedSeconds($bucket, $window);
+                $error = 'Слишком много попыток. Подождите ' . $secs . ' сек.';
                 return $resp->setBody($this->render('login', ['error' => $error, 'site' => $app->config->get('site.name')]));
             }
 
-            $username = (string) $app->request->input('username', '');
             $password = (string) $app->request->input('password', '');
             if ($app->auth->attempt($username, $password)) {
-                Session::forget('login_attempts_' . $key);
-                Session::forget('login_blocked_' . $key);
+                RateLimiter::clear($bucket);
                 Session::regenerate();
                 return $resp->redirect('/admin');
             }
 
-            $attempts++;
-            Session::set('login_attempts_' . $key, $attempts);
-            if ($attempts >= 5) {
-                Session::set('login_blocked_' . $key, time() + 300);
-                $error = 'Слишком много неудачных попыток. Вход заблокирован на 5 минут.';
-            } else {
-                $error = 'Неверный логин или пароль.';
-            }
+            $error = 'Неверный логин или пароль.';
         }
 
         $html = $this->render('login', ['error' => $error, 'site' => $app->config->get('site.name')]);

@@ -109,11 +109,21 @@ class ApiRouter
     protected function handleAuth(): void
     {
         $resp = new Response();
+
+        // Rate-limit выдачи JWT по IP — защита от брутфорса пароля администратора.
+        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $bucket = 'api:auth:' . $ip;
+        if (RateLimiter::tooMany($bucket, 10, 300)) {
+            $this->send($resp, 429, ['error' => 'Too many requests']);
+            return;
+        }
+
         $data = $this->app->request->json();
 
         // Выдача JWT по логину/паролю администратора.
         $user = Database::first('SELECT * FROM users WHERE username = ?', [$data['username'] ?? '']);
         if ($user && password_verify((string) ($data['password'] ?? ''), $user['password_hash'])) {
+            RateLimiter::clear($bucket);
             $token = Jwt::encode(['sub' => (int) $user['id'], 'role' => 'admin'], (string) $this->app->config->get('security.jwt_secret', ''), (int) $this->app->config->get('security.jwt_ttl', 3600));
             $this->send($resp, 200, ['token' => $token, 'expires_in' => (int) $this->app->config->get('security.jwt_ttl', 3600)]);
             return;
